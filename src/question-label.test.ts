@@ -4,6 +4,13 @@ import { assert, describe, it } from '@effect/vitest'
 import { questionLabel, renderedQuestionLabel } from '#/src/question-label'
 
 describe('rendered question identity', () => {
+	it('reads the title of a standalone question without its badge, body or note', () => {
+		const callout = document.createElement('div')
+		callout.dataset['callout'] = 'question'
+		callout.innerHTML =
+			'<div class="callout-title"><div class="callout-title-inner">Which <strong>route</strong>?</div><span>pick 1</span></div><div class="callout-content">River<div>Ask Friday</div></div>'
+		assert.strictEqual(renderedQuestionLabel(callout), questionLabel('Which **route**?'))
+	})
 	it('reads a loose-list question paragraph without its recommendation or answer', () => {
 		const list = document.createElement('ul')
 		list.innerHTML =

@@ -24,8 +24,7 @@ const normalize = (text: string): string => text.replace(/\s+/g, ' ').trim()
 export const questionLabel = (markdown: string): string =>
 	normalize(plainText(fromMarkdown(markdown.replace(/\[\[([^\]\n]+)\]\]/g, wikiLabel))))
 
-/** Read only the question paragraph, never descendant recommendations or answer text. */
-export const renderedQuestionLabel = (callout: HTMLElement): string => {
+const taskQuestionLabel = (callout: HTMLElement): string => {
 	const item = callout.closest('li')
 
 	if (item === null) return ''
@@ -40,3 +39,11 @@ export const renderedQuestionLabel = (callout: HTMLElement): string => {
 
 	return normalize(text)
 }
+
+/** Read the title or task paragraph, never descendant answers, notes or kind badges. */
+export const renderedQuestionLabel = (callout: HTMLElement): string =>
+	callout.dataset['callout'] === 'question'
+		? normalize(
+				callout.querySelector(':scope > .callout-title > .callout-title-inner')?.textContent ?? '',
+			)
+		: taskQuestionLabel(callout)

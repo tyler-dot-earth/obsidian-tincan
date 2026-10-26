@@ -4,6 +4,15 @@ import { assert, describe, it } from '@effect/vitest'
 import { answerCallouts } from '#/src/reading-callouts'
 
 describe('supported reading surface', () => {
+	it('includes standalone question callouts alongside legacy answers while excluding nested examples', () => {
+		const root = document.createElement('div')
+		root.innerHTML =
+			'<div class="callout" data-callout="question" id="modern"><div class="callout" data-callout="question"></div></div><ul><li><div class="callout" data-callout="answer" id="legacy"></div></li></ul><blockquote><div class="callout" data-callout="question"></div></blockquote>'
+		assert.deepStrictEqual(
+			answerCallouts(root).map((box) => box.id),
+			['modern', 'legacy'],
+		)
+	})
 	it('excludes embedded, quoted, and nested callouts from source-order counting', () => {
 		const element = document.createElement('div')
 		element.innerHTML =

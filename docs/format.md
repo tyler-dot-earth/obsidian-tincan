@@ -37,3 +37,159 @@ Drafts live in memory for the current session. Restarting the app, disabling the
 ## Runtime
 
 The plugin uses Obsidian and browser APIs, with no Node or Electron imports in the runtime bundle. Desktop and mobile share the same controls. Checkboxes intercept activation so Obsidian's native task handler cannot write a second time.
+
+## Prototype: question in the callout
+
+This local branch implements a second, explicit format: `[!question] Title`, `[!question|choice] Title`, and `[!question|choices] Title`. The required title is the question. The body is the answer, with the existing Other and trailing nested note fields. A blue question icon means unanswered; a green check icon means answered. Pick kinds remain visible next to the title. Text gets Answer… or Edit; choices get checkboxes and Other. Notes appear only when explicitly seeded with `[!note]`.
+
+Two syntax options were considered:
+
+| Option                                         | Shape                                                         | Tradeoff                                                                                                  |
+| ---------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Question in the title (implemented)            | `[!question                                                   | choice] Which route?` with the answer in its body                                                         | One callout, short Markdown, reuses the answer writer; no task-completion checkbox. |
+| Wrapper around a task and answer (sketch only) | `[!question]` around the existing task and nested `[!answer]` | Keeps task completion, but adds quoting and a second callout and needs a different nested rendering path. |
+
+The wrapper alternative would look like this; it is not recognized by this prototype:
+
+```markdown
+> [!question]
+>
+> - [ ] When should we leave?
+>
+>   > [!answer]
+>   > After lunch.
+```
+
+The title form is the pick for this experiment. It gives the question and answer a single visible box and reuses the current independent answer and note snapshots. Keep the legacy form when a completion checkbox matters.
+
+### Text: before and after
+
+Before:
+
+```markdown
+- [ ] What time works for you?
+
+  > [!answer]
+  > Before dinner.
+```
+
+After:
+
+```markdown
+> [!question] What time works for you?
+> Before dinner.
+```
+
+Leave the body empty to get Answer…; saved text has Edit. The question stays in the title while editing.
+
+### Single choice: before and after
+
+Before:
+
+```markdown
+- [ ] When should we leave?
+
+  > [!answer|choice]
+  >
+  > - [ ] 🤖 After lunch
+```
+
+After:
+
+```markdown
+> [!question|choice] When should we leave?
+>
+> - [ ] 🤖 After lunch
+```
+
+The title shows “pick 1”. A single pick includes Other; choosing one clears the other.
+
+### Multiple choice: before and after
+
+Before:
+
+```markdown
+- [ ] What should we bring?
+
+  > [!answer|choices]
+  >
+  > - [x] Water
+  > - [ ] A snack
+```
+
+After:
+
+```markdown
+> [!question|choices] What should we bring?
+>
+> - [x] Water
+> - [ ] A snack
+```
+
+The title shows “pick 1+”. Several options and Other may be selected together.
+
+### Other: before and after
+
+Before:
+
+```markdown
+- [ ] Which route?
+
+  > [!answer|choice]
+  >
+  > - [ ] Along the river
+  > - [ ] Through the park
+  >
+  > Other: A stop at the market.
+```
+
+After:
+
+```markdown
+> [!question|choice] Which route?
+>
+> - [ ] Along the river
+> - [ ] Through the park
+>
+> Other: A stop at the market.
+```
+
+Other is the sole saved pick here. It renders as a checked row with Edit. An empty Other row has only its checkbox; ticking it opens the editor and clears a single selected option immediately. Save stores custom text; Cancel keeps the draft.
+
+### Notes: before and after
+
+Before:
+
+```markdown
+- [ ] Which route?
+
+  > [!answer|choice]
+  >
+  > - [x] Along the river
+  > - [ ] Through the park
+  >
+  > > [!note]
+  > > Check the weather before we go.
+```
+
+After:
+
+```markdown
+> [!question|choice] Which route?
+>
+> - [x] Along the river
+> - [ ] Through the park
+>
+> > [!note]
+> > Check the weather before we go.
+```
+
+An empty nested note enables Add note. A filled one enables Edit note. With no marker, there is no note control. Notes remain separate from the answer and never count as answers.
+
+### Compatibility and limits
+
+- Existing task questions with `[!answer]` continue to parse, render, and save as before. Their custom callout titles still describe the answer; they are not reinterpreted as questions. Checked tasks remain editable. There is no automatic migration or change to existing files.
+- The prototype recognizes only standalone, top-level `[!question]` callouts with nonempty, one-line titles and explicit `>` markers on every body line. Separate callouts with a blank line. Missing titles, unsupported kinds, conflicting single picks, and malformed note fields receive no controls. Fences, HTML examples, nested quotes, embedded notes, and list-nested question callouts stay ordinary Markdown.
+- Question-title Markdown is matched to its rendered label, including emphasis and link labels. Titles must be unique across both formats in the file; even unsupported copies with the same title prevent a save. Changing the title, kind, collapse marker, or field source refuses an outstanding save and retains the draft.
+- The new form has no independent task-completion state. Its check icon reports a saved answer, not task completion. Collapsible callouts are supported. Body fields keep their existing option syntax, line endings, indentation, and independent note validation, and all writes still use `Vault.process` against the original file identity.
+- Without Tincan, Obsidian still displays the question title and plain Markdown body. The text remains readable, and option markers are ordinary Markdown tasks. The prototype has been kept on a local branch and is not installed into the personal vault.

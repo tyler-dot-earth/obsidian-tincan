@@ -6,6 +6,20 @@ Answer questions right in Obsidian's reading view. Type an answer, pick an optio
 
 Write a task question, add an answer callout, and switch to reading view. Filled text answers have **Edit**; checking off the question never locks them.
 
+## Branch prototype: question in the callout
+
+On `question-in-callout`, you can also put a question in a standalone callout title:
+
+```markdown
+> [!question|choice] When should we leave?
+>
+> - [ ] 🤖 After lunch
+```
+
+The title is the question; the body holds its answer and optional nested `[!note]`. It uses the same text, pick, Other, and note controls. The task format below still works. This prototype has no separate completion checkbox and does not convert existing notes.
+
+Open `example/vault/Question callouts.md` to try it. See the [syntax options and before/after examples](docs/format.md#prototype-question-in-the-callout) for text, single and multiple picks, Other, notes, and compatibility details. The title form is implemented; the nested wrapper alternative is a design sketch only.
+
 ## Text answers
 
 ```markdown

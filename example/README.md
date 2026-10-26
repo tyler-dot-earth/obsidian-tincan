@@ -26,3 +26,5 @@ The setup script copies only `main.js`, `manifest.json`, and `styles.css`. Run i
 - In `Showcase.md`, only “Which route?” opts into notes with a nested `[!note]`, so it has Edit note. To try Add note, add an empty nested `[!note]` in source view. Other questions and ordinary tasks have no note controls.
 
 `Showcase.md` is a compact version for screenshots. Both notes are ordinary Markdown without the plugin.
+
+On the `question-in-callout` prototype branch, `Question callouts.md` demonstrates text, single picks, multiple picks, Other and an explicit note with each question in its callout title. `Questions.md` and `Showcase.md` retain the legacy format so both forms can be checked together.

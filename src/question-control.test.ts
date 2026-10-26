@@ -102,6 +102,35 @@ const nativeNote =
 	'<div class="callout" data-callout="note"><div class="callout-content">Ask Friday</div></div>'
 
 describe('one compact question box', () => {
+	it('edits a title-question answer without changing its title or explicit note', async () => {
+		const source = '> [!question] Q?\n> Plan\n>\n> > [!note]\n> > Ask Friday\n'
+		const note = new Note(source)
+
+		const html = outer('<p>Plan</p>' + nativeNote)
+			.replace('data-callout="answer"', 'data-callout="question"')
+			.replace('>Answer</div>', '>Q?</div>')
+
+		const { root, box, control } = note.mount(html)
+		click(box, 'Edit')
+		const textarea = box.querySelector<HTMLTextAreaElement>('.answer-body textarea')
+		assert.ok(textarea !== null)
+		textarea.value = 'A better plan'
+		textarea.dispatchEvent(new Event('input', { bubbles: true }))
+		click(box, 'Done')
+		await note.lastSave
+		assert.strictEqual(note.writes, 1)
+		assert.strictEqual(note.source, source.replace('> Plan', '> A better plan'))
+		assert.strictEqual(box.querySelector('.callout-title-inner')?.textContent, 'Q?')
+		assert.strictEqual(box.querySelector('.answer-note-text')?.textContent, 'Ask Friday')
+		click(box, 'Edit note')
+		assert.strictEqual(
+			box.querySelector<HTMLTextAreaElement>('.answer-note textarea')?.value,
+			'Ask Friday',
+		)
+		control.unload()
+		root.remove()
+	})
+
 	it.each(['', '  > [!answer]\n'])(
 		'does not offer note controls without explicit note syntax: %s',
 		(body) => {

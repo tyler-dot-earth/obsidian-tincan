@@ -5,12 +5,8 @@ import { gfmTaskListItemFromMarkdown } from 'mdast-util-gfm-task-list-item'
 import { frontmatter } from 'micromark-extension-frontmatter'
 import { gfmTaskListItem } from 'micromark-extension-gfm-task-list-item'
 
-import {
-	answerContent,
-	type AnswerContent,
-	type AnswerKind,
-	isAnswered,
-} from '#/src/answer-content'
+import type { AnswerContent } from '#/src/answer-content'
+import { calloutSlot } from '#/src/answer-slots'
 import { sourceLines, type SourceLine } from '#/src/markdown-lines'
 import { splitNestedNotes } from '#/src/nested-notes'
 
@@ -43,64 +39,6 @@ const questionText = (item: ListItem, source: string): string => {
 	return source.slice(paragraph.position?.start.offset, paragraph.position?.end.offset).trim()
 }
 
-const answerKind = (metadata: string | undefined): AnswerKind | undefined => {
-	switch (metadata?.toLowerCase()) {
-		case undefined:
-			return 'text'
-		case 'choice':
-			return 'choice'
-		case 'choices':
-			return 'choices'
-		default:
-			return undefined
-	}
-}
-
-const slotContent = (
-	metadata: string | undefined,
-	lines: readonly SourceLine[],
-): AnswerContent | undefined => {
-	const kind = answerKind(metadata)
-
-	if (kind === undefined) return undefined
-
-	if (kind !== 'text' && lines.some((line) => !/^[ \t]*>/.test(line.text))) return undefined
-	const body = lines.map((entry) => entry.text.replace(/^[ \t]*>[ \t]?/, '')).join('\n')
-
-	return answerContent(kind, body)
-}
-
-const slotAt = (node: Blockquote, lines: readonly SourceLine[]): AnswerSlot | undefined => {
-	if (node.position === undefined) return undefined
-	const line = node.position.start.line - 1
-	const header = lines[line]
-
-	if (header === undefined) return undefined
-
-	const match = /^(\s*>)[ \t]*\[!answer(?:\|([^\]\r\n]*))?\](?:[+-])?(?:[ \t]+[^\r\n]*)?$/i.exec(
-		header.text,
-	)
-
-	if (match === null) return undefined
-	const last = lines[node.position.end.line - 1]
-
-	if (last === undefined) return undefined
-	const content = slotContent(match[2], lines.slice(line + 1, node.position.end.line))
-
-	return {
-		line,
-		start: header.offset,
-		end: last.offset + last.text.length + last.ending.length,
-		prefix: match[1] ?? '>',
-		blank: content !== undefined && !isAnswered(content),
-		source: lines
-			.slice(line, node.position.end.line)
-			.map((entry) => entry.text + entry.ending)
-			.join(''),
-		content,
-	}
-}
-
 /** The recommendation marker belongs inside an answer, never in question context. */
 const contextLists = (item: ListItem, source: string): boolean =>
 	!questionText(item, source).startsWith('🤖') &&
@@ -122,7 +60,7 @@ const blockFrom = (
 
 	const fields = item.children.flatMap((child) => {
 		if (child.type !== 'blockquote') return []
-		const slot = slotAt(child, lines)
+		const slot = calloutSlot(child, lines, 'answer')
 
 		return slot === undefined ? [] : [splitNestedNotes(slot, child, lines)]
 	})
@@ -155,6 +93,40 @@ const blockFrom = (
 	}
 }
 
+const questionTitle = (header: string): string | undefined =>
+	/\[!question(?:\|[^\]]*)?\][+-]?[ \t]+(\S.*)$/i.exec(header)?.[1]?.trim()
+
+const calloutFrom = (node: Blockquote, lines: readonly SourceLine[]): QuestionBlock | undefined => {
+	const slot = calloutSlot(node, lines, 'question')
+
+	if (slot === undefined) return undefined
+	const header = lines[slot.line]?.text ?? ''
+	const question = questionTitle(header)
+
+	if (question === undefined) return undefined
+
+	const fields = splitNestedNotes(slot, node, lines)
+
+	const endLine = slot.line + sourceLines(slot.source).length - 1
+
+	const supported = lines
+		.slice(slot.line + 1, endLine + 1)
+		.every(
+			(line) =>
+				/^[ \t]*>/.test(line.text) && !/^[ \t]*>[ \t]*\[!question(?:\||\])/i.test(line.text),
+		)
+
+	return {
+		question,
+		line: slot.line,
+		endLine,
+		completed: false,
+		context: supported ? header.trimEnd() : undefined,
+		slots: [fields.answer],
+		notes: fields.notes,
+	}
+}
+
 const collectBlocks = (
 	node: Nodes,
 	source: string,
@@ -180,7 +152,15 @@ export const questionBlocks = (source: string): QuestionBlock[] => {
 	})
 
 	const blocks: QuestionBlock[] = []
-	collectBlocks(tree, source, blocks, sourceLines(source))
+	const lines = sourceLines(source)
+
+	for (const child of tree.children) {
+		if (child.type === 'blockquote') {
+			const block = calloutFrom(child, lines)
+
+			if (block !== undefined) blocks.push(block)
+		} else collectBlocks(child, source, blocks, lines)
+	}
 
 	return blocks
 }
