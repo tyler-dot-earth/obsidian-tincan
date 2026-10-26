@@ -45,10 +45,10 @@ This local branch implements a second, explicit format: `[!question] Title`, `[!
 
 Two syntax options were considered:
 
-| Option                                         | Shape                                                         | Tradeoff                                                                                                  |
-| ---------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Question in the title (implemented)            | `[!question                                                   | choice] Which route?` with the answer in its body                                                         | One callout, short Markdown, reuses the answer writer; no task-completion checkbox. |
-| Wrapper around a task and answer (sketch only) | `[!question]` around the existing task and nested `[!answer]` | Keeps task completion, but adds quoting and a second callout and needs a different nested rendering path. |
+| Option                                         | Shape                                                                         | Tradeoff                                                                                                  |
+| ---------------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Question in the title (implemented)            | <code>[!question&#124;choice] Which route?</code> with the answer in its body | One callout, short Markdown, reuses the answer writer; no task-completion checkbox.                       |
+| Wrapper around a task and answer (sketch only) | `[!question]` around the existing task and nested `[!answer]`                 | Keeps task completion, but adds quoting and a second callout and needs a different nested rendering path. |
 
 The wrapper alternative would look like this; it is not recognized by this prototype:
 
