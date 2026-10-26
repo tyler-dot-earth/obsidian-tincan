@@ -1,0 +1,8 @@
+allowBuilds:
+  esbuild: true
+minimumReleaseAgeExclude:
+  - '@tyler.earth/effect-obsidian'
+
+# The rc's caret range otherwise selects a stable platform package with an incompatible Effect peer.
+overrides:
+  '@effect/platform-node@4.0.0-rc.113>@effect/platform-node-shared': 4.0.0-rc.113

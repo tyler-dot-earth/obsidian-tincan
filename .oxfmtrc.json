@@ -1,0 +1,28 @@
+{
+	"$schema": "./node_modules/oxfmt/configuration_schema.json",
+	"jsdoc": {},
+	"quoteProps": "consistent",
+	"printWidth": 100,
+	"semi": false,
+	"singleAttributePerLine": true,
+	"singleQuote": true,
+	"useTabs": true,
+	"trailingComma": "all",
+	"sortImports": {
+		"internalPattern": ["#src/*"],
+		"newlinesBetween": true
+	},
+	"sortPackageJson": {
+		"sortScripts": true
+	},
+	"ignorePatterns": [
+		"**/node_modules/**",
+		"**/dist/**",
+		"**/coverage/**",
+		"main.js",
+		"app.css",
+		"pnpm-lock.yaml",
+		"flake.lock",
+		"tools/oxlint/anti-slop/**"
+	]
+}

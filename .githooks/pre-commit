@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+if command -v lefthook >/dev/null 2>&1 && command -v pnpm >/dev/null 2>&1; then
+	exec lefthook run pre-commit --force --no-auto-install "$@"
+fi
+
+exec nix develop "$repo_root" --command lefthook run pre-commit --force --no-auto-install "$@"

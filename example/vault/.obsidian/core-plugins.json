@@ -1,0 +1,9 @@
+{
+	"file-explorer": true,
+	"command-palette": true,
+	"outline": false,
+	"backlink": false,
+	"graph": false,
+	"sync": false,
+	"publish": false
+}

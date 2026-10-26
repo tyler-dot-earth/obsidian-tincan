@@ -1,0 +1,16 @@
+node_modules
+main.js
+*.map
+data.json
+.direnv
+.DS_Store
+*.tsbuildinfo
+coverage
+dist
+.idea
+.vscode
+example/vault/.obsidian/workspace.json
+example/vault/.obsidian/workspace-mobile.json
+example/vault/.obsidian/plugins/tincan/main.js
+example/vault/.obsidian/plugins/tincan/manifest.json
+example/vault/.obsidian/plugins/tincan/styles.css

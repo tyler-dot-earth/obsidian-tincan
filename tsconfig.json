@@ -1,0 +1,32 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"exactOptionalPropertyTypes": true,
+		"noUncheckedIndexedAccess": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noUncheckedSideEffectImports": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"allowImportingTsExtensions": false,
+		"verbatimModuleSyntax": true,
+		"rewriteRelativeImportExtensions": true,
+		"erasableSyntaxOnly": true,
+		"target": "ES2025",
+		"module": "ESNext",
+		"moduleDetection": "force",
+		"moduleResolution": "bundler",
+		"lib": ["ES2025", "DOM", "DOM.Iterable"],
+		"types": ["node"],
+		"isolatedModules": true,
+		"noEmit": true,
+		"rootDir": "./src",
+		"plugins": [{ "name": "@effect/language-service" }]
+	},
+	"include": ["src/**/*.ts", "src/**/*.d.ts"],
+	"exclude": ["src/**/*.test.ts"]
+}
