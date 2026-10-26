@@ -4,6 +4,8 @@
 
 A question is a standalone, top-level callout. Its nonempty, one-line title is the question; its body holds the answer. Separate callouts with a blank line and use an explicit `>` marker on every body line, including blank lines.
 
+A blank `>` line between the title and body is optional for all three kinds. Text and options can start directly under the title.
+
 - `[!question] Title` accepts a text answer, which may contain Markdown.
 - `[!question|choice] Title` accepts one pick, counting nonblank Other as a pick.
 - `[!question|choices] Title` accepts multiple picks, optionally with Other.
@@ -24,13 +26,21 @@ A question is a standalone, top-level callout. Its nonempty, one-line title is t
 > - [ ] A jacket
 ```
 
-A blue question icon means unanswered; a green check means answered. The icon reports saved answer state, with no independent task-completion checkbox. Questions remain editable after answering. Collapsible callouts, title Markdown, tabs, LF/CRLF line endings, and missing final newlines are supported.
+A blue question icon means unanswered; a green check means answered. The icon reports saved answer state, with no independent task-completion checkbox. Questions remain editable after answering. Collapsible callouts, title Markdown, LF/CRLF line endings, and missing final newlines are supported.
 
 Empty text answers show Answer…; saved text shows Edit. Recommendations belong inside the answer as `🤖` option labels. A single unchecked recommendation in a choice callout offers a suggestion plus Other. Text answer bodies are always literal Markdown, including a line beginning with `🤖`.
 
 ## Picks and Other
 
 Options must be flat, one-line `- [ ] Label` or `- [x] Label` entries, each with its own `>` marker. Labels must be nonempty and distinct. Single picks show “pick 1”; multiple picks show “pick 1+”.
+
+The compact layout works too:
+
+```text
+> [!question|choice] Which route?
+> - [ ] Along the river
+> - [ ] Through the park
+```
 
 An optional `Other:` section follows the options:
 

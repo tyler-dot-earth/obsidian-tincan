@@ -68,7 +68,7 @@ Add a trailing nested `[!note]` when you want a comment separate from the answer
 
 Only an explicit `[!note]` gets note controls. A filled note has Edit note. Add an empty nested `[!note]` in source view to get Add note in reading view. Both are small native Obsidian buttons. A note never counts as an answer.
 
-Keep callouts at the document's top level, give each one a nonempty question title, and separate them with a blank line. Use `>` on every body line, including blank lines. See [the format and save rules](docs/format.md) for the details.
+Keep callouts at the document's top level, give each one a nonempty question title, and separate them with a blank line. Use `>` on every body line, including blank lines. The body can start directly under the title or after a blank `>` line; both layouts work for text, single picks, and multiple picks. See [the format and save rules](docs/format.md) for the details.
 
 ## Install
 

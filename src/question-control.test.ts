@@ -130,6 +130,66 @@ describe('one compact question box', () => {
 		root.remove()
 	})
 
+	it.each([
+		['text', 'direct'],
+		['text', 'separated'],
+		['choice', 'direct'],
+		['choice', 'separated'],
+		['choices', 'direct'],
+		['choices', 'separated'],
+	] as const)('parses and renders %s with %s body lines', (kind, layout) => {
+		const gap = layout === 'separated' ? '>\n' : ''
+		const metadata = kind === 'text' ? '' : '|' + kind
+		const body = kind === 'text' ? '> Tomorrow\n' : '> - [ ] River\n> - [ ] Park\n'
+		const source = `> [!question${metadata}] Q?\n${gap}${body}>\n> > [!note]\n> > Ask Friday\n`
+		const block = questionBlocks(source)[0]
+		assert.ok(block !== undefined)
+		assert.deepStrictEqual(
+			block.slots[0].content,
+			kind === 'text'
+				? { kind, text: layout === 'separated' ? '\nTomorrow' : 'Tomorrow' }
+				: {
+						kind,
+						options: [
+							{ label: 'River', checked: false },
+							{ label: 'Park', checked: false },
+						],
+						other: '',
+					},
+		)
+
+		const note = new Note(source)
+		const html = kind === 'text' ? '<p>Tomorrow</p>' : '<ul><li>River</li><li>Park</li></ul>'
+		const { root, box, control } = note.mount(outer(html + nativeNote))
+		assert.strictEqual(box.querySelector('.callout-title-inner')?.textContent, 'Q?')
+		assert.strictEqual(box.querySelector('.answer-note-text')?.textContent, 'Ask Friday')
+
+		if (kind === 'text') {
+			click(box, 'Edit')
+			assert.strictEqual(
+				box.querySelector<HTMLTextAreaElement>('.answer-body textarea')?.value,
+				layout === 'separated' ? '\nTomorrow' : 'Tomorrow',
+			)
+		} else {
+			assert.deepStrictEqual(
+				Array.from(box.querySelectorAll<HTMLInputElement>('.answer-option input')).map(
+					(input) => input.checked,
+				),
+				[false, false],
+			)
+			assert.strictEqual(
+				box.querySelector('.answer-kind')?.textContent,
+				kind === 'choice' ? 'pick 1' : 'pick 1+',
+			)
+			assert.strictEqual(box.querySelector('.answer-other-row label')?.textContent, 'Other')
+		}
+
+		assert.strictEqual(note.writes, 0)
+		assert.strictEqual(note.source, source)
+		control.unload()
+		root.remove()
+	})
+
 	it.each(['', '>\n'])('does not offer note controls without explicit note syntax: %s', (body) => {
 		const source = '> [!question] Q?\n' + body
 		const note = new Note(source)
