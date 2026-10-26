@@ -59,6 +59,8 @@ Suggestions use the same controls and save rules as other picks. To update the e
 
 Tap an option to save it straight away. Picking another clears the first, including Other; unticking clears your answer. `🤖` marks a recommendation, and the title says “pick 1”.
 
+Once a pick answer has a selection, the selected text is emphasized and the unselected labels are muted. This includes Other and multiple picks. All options stay clickable, and clearing the last selection restores the unanswered appearance. Colors and weight follow your Obsidian theme.
+
 ## Pick more than one
 
 ```markdown

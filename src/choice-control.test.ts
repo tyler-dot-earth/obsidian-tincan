@@ -122,6 +122,74 @@ const close = (mounted: ReturnType<Note['mount']>): void => {
 
 describe('direct reading-view picks', () => {
 	it.each(['choice', 'choices'])(
+		'enables selection styling for %s only while a pick is shown and keeps muted options usable',
+		async (kind) => {
+			const note = new Note(sourceFor(kind))
+			const mounted = note.mount()
+			const fieldset = mounted.element.querySelector('fieldset')
+			assert.ok(fieldset !== null)
+			assert.strictEqual(fieldset.classList.contains('answer-has-selection'), false)
+			assert.strictEqual(note.writes, 0)
+			input(mounted.element, 0).click()
+			await note.lastSave
+			assert.strictEqual(fieldset.classList.contains('answer-has-selection'), true)
+			assert.strictEqual(input(mounted.element, 1).disabled, false)
+			input(mounted.element, 1).click()
+			await note.lastSave
+			assert.deepStrictEqual(picks(mounted.element), [kind === 'choices', true])
+			assert.strictEqual(fieldset.classList.contains('answer-has-selection'), true)
+
+			if (kind === 'choices') {
+				input(mounted.element, 0).click()
+				await note.lastSave
+				assert.strictEqual(fieldset.classList.contains('answer-has-selection'), true)
+			}
+
+			input(mounted.element, 1).click()
+			await note.lastSave
+			assert.deepStrictEqual(picks(mounted.element), [false, false])
+			assert.strictEqual(fieldset.classList.contains('answer-has-selection'), false)
+			assert.strictEqual(note.source, sourceFor(kind))
+			close(mounted)
+		},
+	)
+
+	it.each(['choice', 'choices'])(
+		'counts Other for %s selection styling, restores it on redraw and clears it with the last answer',
+		async (kind) => {
+			const note = new Note(sourceFor(kind))
+			const mounted = note.mount()
+			const fieldset = mounted.element.querySelector('fieldset')
+			assert.ok(fieldset !== null)
+			mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+			const textarea = mounted.element.querySelector('textarea')
+			assert.ok(textarea !== null)
+			textarea.value = 'By bus'
+			textarea.dispatchEvent(new Event('input', { bubbles: true }))
+			assert.strictEqual(fieldset.classList.contains('answer-has-selection'), false)
+			mounted.element.querySelector<HTMLButtonElement>('.answer-other-save')?.click()
+			await note.lastSave
+			assert.strictEqual(fieldset.classList.contains('answer-has-selection'), true)
+			assert.deepStrictEqual(picks(mounted.element), [false, false])
+			assert.strictEqual(
+				mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.checked,
+				true,
+			)
+			close(mounted)
+			const redrawn = note.mount()
+			const restored = redrawn.element.querySelector('fieldset')
+			assert.ok(restored !== null)
+			assert.strictEqual(restored.classList.contains('answer-has-selection'), true)
+			redrawn.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+			await note.lastSave
+			assert.strictEqual(restored.classList.contains('answer-has-selection'), false)
+			assert.deepStrictEqual(picks(redrawn.element), [false, false])
+			assert.ok(!note.source.includes('Other:'))
+			close(redrawn)
+		},
+	)
+
+	it.each(['choice', 'choices'])(
 		'saves %s on a label click without Answer, Edit, or Done',
 		async (kind) => {
 			const note = new Note(sourceFor(kind))

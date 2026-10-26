@@ -1,4 +1,4 @@
-import { answerContent, answerText, type AnswerContent } from '#/src/answer-content'
+import { answerContent, answerText, isAnswered, type AnswerContent } from '#/src/answer-content'
 import type { AnswerTarget } from '#/src/answer-target'
 import type { Draft } from '#/src/drafts'
 import { OtherControl } from '#/src/other-control'
@@ -185,6 +185,7 @@ export class ChoiceControl {
 
 		if (content === undefined) return
 		const disabled = this.busy || this.draft.saving
+		this.fieldset.classList.toggle('answer-has-selection', isAnswered(content))
 
 		for (const [index, input] of this.inputs.entries()) {
 			input.checked = content.options[index]?.checked === true
