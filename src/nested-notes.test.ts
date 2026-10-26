@@ -34,8 +34,9 @@ describe('notes within an answer', () => {
 
 	it('adds a note inside the existing answer and keeps its earlier answer snapshot valid', () => {
 		const answer = targetFor(base, 'Walk?')
-		const comment = targetFor(base, 'Walk?', 'note')
-		const withNote = writeAnswer(base, comment, 'Leaning A; ask after X')
+		const seeded = base + '  >\n  > > [!note]\n  > >\n'
+		const comment = targetFor(seeded, 'Walk?', 'note')
+		const withNote = writeAnswer(seeded, comment, 'Leaning A; ask after X')
 		assert.strictEqual(withNote, base + note)
 
 		const both = writeAnswer(

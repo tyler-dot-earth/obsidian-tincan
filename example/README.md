@@ -23,6 +23,6 @@ The setup script copies only `main.js`, `manifest.json`, and `styles.css`. Run i
 - Switch a single pick, tick several picks, and save an Other answer.
 - In `Showcase.md`, “Which route?” starts with only Other selected. Pick “Along the river” to clear Other, then save a new Other answer to clear the route option. Multi-pick questions allow Other alongside their options.
 - Edit a note without changing the answer, including on a completed question.
-- In `Showcase.md`, try the small Add note and Edit note buttons below each answer. Their native Obsidian styling is visible before hovering.
+- In `Showcase.md`, only “Which route?” opts into notes with a nested `[!note]`, so it has Edit note. To try Add note, add an empty nested `[!note]` in source view. Other questions and ordinary tasks have no note controls.
 
 `Showcase.md` is a compact version for screenshots. Both notes are ordinary Markdown without the plugin.

@@ -109,8 +109,8 @@ describe('reading-view answer controls', () => {
 		control.unload()
 		element.remove()
 	})
-	it('creates and edits side notes on questions with no answer, including completed questions', async () => {
-		const note = new Note('- [x] Revisit?\n')
+	it('fills and edits an explicit empty note, including on completed questions', async () => {
+		const note = new Note('- [x] Revisit?\n\n  > [!answer]\n  >\n  > > [!note]\n  > >\n')
 		const element = callout()
 		const control = note.mount(element, 'Revisit?', 'note')
 		assert.strictEqual(element.classList.contains('answer-side-note'), true)

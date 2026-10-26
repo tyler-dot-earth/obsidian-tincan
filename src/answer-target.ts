@@ -90,8 +90,6 @@ export const writeAnswer = (source: string, target: AnswerTarget, answer: string
 	const block = matchTarget(source, target)
 	const slot = target.field === 'note' ? block.notes[0] : block.slots[0]
 
-	if (slot === undefined && target.field === 'note') return insertSideNote(source, block, answer)
-
 	if (slot === undefined)
 		throw new AnswerError({ message: 'The answer callout is missing; your draft is kept.' })
 
@@ -123,76 +121,6 @@ const replaceSlot = (source: string, slot: AnswerSlot, answer: string): string =
 		newline +
 		body +
 		trailing +
-		source.slice(slot.end)
-	)
-}
-
-const questionPrefix = (text: string): string => {
-	const marker = /^([ \t]*)([-+*]|\d+[.)])([ \t]+)/.exec(text)
-
-	if (marker === null)
-		throw new AnswerError({ message: 'The question indentation changed; your draft is kept.' })
-
-	return (marker[1] ?? '') + ' '.repeat((marker[2] ?? '').length) + (marker[3] ?? ' ') + '>'
-}
-
-const insertSideNote = (source: string, block: QuestionBlock, text: string): string => {
-	const slot = block.slots[0]
-
-	if (slot !== undefined) return appendNestedNote(source, slot, text)
-	const lines = sourceLines(source)
-	const first = lines[block.line]
-	const last = lines[block.endLine]
-
-	if (first === undefined || last === undefined)
-		throw new AnswerError({ message: 'The question is missing; your draft is kept.' })
-	const prefix = questionPrefix(first.text)
-	const newline = lineEnding(lines, first)
-	const end = last.offset + last.text.length + last.ending.length
-	const leading = last.ending === '' ? newline + newline : newline
-	const body = noteBody(prefix, text, newline)
-
-	return (
-		source.slice(0, end) +
-		leading +
-		prefix +
-		' [!answer]' +
-		newline +
-		prefix +
-		newline +
-		body +
-		last.ending +
-		source.slice(end)
-	)
-}
-
-const noteBody = (prefix: string, text: string, newline: string): string =>
-	prefix +
-	' > [!note]' +
-	newline +
-	text
-		.replace(/\r\n|\r/g, '\n')
-		.split('\n')
-		.map((line) => prefix + ' > ' + line)
-		.join(newline)
-
-const appendNestedNote = (source: string, slot: AnswerSlot, text: string): string => {
-	const lines = sourceLines(slot.source)
-	const header = lines[0]
-
-	if (header === undefined)
-		throw new AnswerError({ message: 'The answer callout is missing; your draft is kept.' })
-	const newline = lineEnding(lines, header)
-	const ending = lines.at(-1)?.ending ?? ''
-	const separator = ending === '' ? newline : ''
-
-	return (
-		source.slice(0, slot.end) +
-		separator +
-		slot.prefix +
-		newline +
-		noteBody(slot.prefix, text, newline) +
-		ending +
 		source.slice(slot.end)
 	)
 }

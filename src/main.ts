@@ -36,12 +36,7 @@ export default class AnswerPlugin extends Plugin {
 		}
 
 		this.registerMarkdownPostProcessor((element, context) => {
-			if (
-				answerCallouts(element).length === 0 &&
-				!element.matches('li.task-list-item') &&
-				element.querySelector('li.task-list-item') === null
-			)
-				return
+			if (answerCallouts(element).length === 0) return
 
 			const section = new AnswerSection(element, context, host)
 			this.sections.add(section)

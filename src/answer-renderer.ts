@@ -10,12 +10,11 @@ import { isAnswered } from '#/src/answer-content'
 import type { ControlActions } from '#/src/answer-control'
 import type { AnswerTarget } from '#/src/answer-target'
 import type { Draft } from '#/src/drafts'
-import { canAnnotate, canEdit, type QuestionBlock } from '#/src/question-blocks'
+import { canEdit, type QuestionBlock } from '#/src/question-blocks'
 import { QuestionControl } from '#/src/question-control'
 import { questionLabel, renderedQuestionLabel } from '#/src/question-label'
 import { answerCallouts } from '#/src/reading-callouts'
-import { sectionTargets, type SectionSource } from '#/src/section-targets'
-import { questionCallout, sideNoteItems } from '#/src/side-note-items'
+import { sectionTargets } from '#/src/section-targets'
 import { whenAttached } from '#/src/when-attached'
 
 export interface RenderHost {
@@ -37,22 +36,15 @@ const paintCallout = (element: HTMLElement, target: AnswerTarget): void => {
 }
 
 const eligibleQuestion = (block: QuestionBlock | undefined): block is QuestionBlock =>
-	block !== undefined && canAnnotate(block) && (block.slots.length === 0 || canEdit(block))
+	block !== undefined && canEdit(block)
 
 class RenderedQuestion extends MarkdownRenderChild {
 	private readonly control: QuestionControl
-	private readonly removeOnUnload: boolean
 	private readonly icon: HTMLElement | null
 	private readonly originalIcon: Node[]
 
-	constructor(
-		element: HTMLElement,
-		block: QuestionBlock,
-		actions: ControlActions,
-		removeOnUnload = false,
-	) {
+	constructor(element: HTMLElement, block: QuestionBlock, actions: ControlActions) {
 		super(element)
-		this.removeOnUnload = removeOnUnload
 		this.icon = element.querySelector<HTMLElement>(':scope > .callout-title > .callout-icon')
 		this.originalIcon = Array.from(this.icon?.childNodes ?? [])
 		this.control = new QuestionControl(element, block, {
@@ -68,8 +60,6 @@ class RenderedQuestion extends MarkdownRenderChild {
 		this.control.unload()
 		this.containerEl.classList.remove(...appearanceClasses)
 		this.icon?.replaceChildren(...this.originalIcon)
-
-		if (this.removeOnUnload) this.containerEl.remove()
 	}
 }
 
@@ -105,7 +95,6 @@ export class AnswerSection extends MarkdownRenderChild {
 
 		for (const [index, callout] of callouts.entries())
 			this.mountControl(callout, targets[index], file)
-		this.mountMissingNotes(element, section, file)
 	}
 
 	private actions(file: TFile): ControlActions {
@@ -113,20 +102,6 @@ export class AnswerSection extends MarkdownRenderChild {
 			draft: (next): Draft => this.host.draft(file, next),
 			save: (draft): Promise<boolean> => this.host.save(file, draft),
 			modal: (draft): void => this.host.modal(file, draft),
-		}
-	}
-
-	private mountMissingNotes(element: HTMLElement, section: SectionSource, file: TFile): void {
-		for (const item of sideNoteItems(element, section)) {
-			if (
-				!canAnnotate(item.block) ||
-				item.block.notes.length !== 0 ||
-				item.block.slots.length !== 0 ||
-				item.element.querySelector(':scope > .answer-question') !== null
-			)
-				continue
-			const box = questionCallout(item.element)
-			this.addChild(new RenderedQuestion(box, item.block, this.actions(file), true))
 		}
 	}
 

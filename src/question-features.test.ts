@@ -103,48 +103,21 @@ describe('Other and side-note Markdown', () => {
 		)
 	})
 
-	it.each(['- [ ]', '- [x]'])(
-		'inserts and edits a side note on %s questions without an answer slot',
-		(task) => {
-			const source = `Heading\n\n${task} Revisit this?\n\nTail\n`
-			const opened = targetFor(source, 'Revisit this?', 'note')
-			const saved = writeAnswer(source, opened, 'Leaning A, but ask after Friday.')
-			assert.strictEqual(
-				saved,
-				`Heading\n\n${task} Revisit this?\n\n  > [!answer]\n  >\n  > > [!note]\n  > > Leaning A, but ask after Friday.\n\nTail\n`,
-			)
-
-			const edited = writeAnswer(saved, targetFor(saved, 'Revisit this?', 'note'), 'Ask next week.')
-
-			assert.strictEqual(
-				edited,
-				saved.replace('Leaning A, but ask after Friday.', 'Ask next week.'),
-			)
-			const block = questionBlocks(edited)[0]
-			assert.ok(block !== undefined && canAnnotate(block))
-			assert.strictEqual(block.slots.length, 1)
-		},
-	)
-
-	it('inserts a parent side note after a nested task and preserves CRLF, tabs and EOF', () => {
-		const source = '- [ ] Parent?\r\n\t- [ ] Child?'
-		const saved = writeAnswer(source, targetFor(source, 'Parent?', 'note'), 'Parent comment')
-		assert.strictEqual(
-			saved,
-			source + '\r\n\r\n  > [!answer]\r\n  >\r\n  > > [!note]\r\n  > > Parent comment',
-		)
-		assert.strictEqual(targetFor(saved, 'Parent?', 'note').answer?.content?.kind, 'text')
-		assert.strictEqual(
-			questionBlocks(saved).find((block) => block.question === 'Child?')?.notes.length,
-			0,
-		)
+	it.each(['- [ ]', '- [x]'])('refuses implicit note fields on %s tasks', (task) => {
+		for (const body of ['', '  > [!answer]\n']) {
+			const source = task + ' Revisit this?\n' + body
+			const block = questionBlocks(source)[0]
+			assert.ok(block !== undefined)
+			assert.strictEqual(canAnnotate(block), false)
+			assert.throws(() => targetFor(source, 'Revisit this?', 'note'), AnswerError)
+		}
 	})
 
 	it.effect(
 		'validates side-note source and original-file guards inside the same Effect write program',
 		() =>
 			Effect.gen(function* () {
-				let source = '- [ ] Revisit?\n'
+				let source = '- [ ] Revisit?\n  > [!answer]\n  >\n  > > [!note]\n  > >\n'
 				let writes = 0
 				let available = true
 

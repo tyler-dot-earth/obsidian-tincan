@@ -94,7 +94,7 @@ The small Add note button keeps a comment inside the same box, separate from the
   > > Ask again after checking the dates.
 ```
 
-Notes also work on tasks without an answer callout; adding one creates the wrapper for you. A note never counts as an answer.
+Note controls appear only when the answer already contains a nested `[!note]`. To add the first note, put an empty nested `[!note]` at the end of the answer in source view; it shows Add note in reading view. An ordinary task or an answer without that marker gets no note controls. A note never counts as an answer.
 
 ## Install
 

@@ -11,6 +11,7 @@
 - Ticking an empty Other checkbox in a single-choice question immediately clears its saved option and opens the editor. An unanswered Other row has no separate button; tick its checkbox again to resume a canceled draft. Saved Other text keeps Edit. Cancel keeps the draft; it does not undo a previously saved checkbox change.
 - Existing single-choice blocks with two checked options, or a checked option plus nonblank Other, are invalid. Tincan leaves their Markdown unchanged and provides no reading-view controls. Correct the source to keep one pick, or use `[!answer|choices]` for multiple answers.
 - A nested `[!note]` must be the final direct child of the answer callout. Answer and note are separate fields, and notes never count as answers.
+- Notes are opt-in: an existing nested `[!note]` enables note controls. An empty one shows Add note; a filled one shows Edit note. Add the first empty marker in source view. Plain tasks and answer callouts without that marker receive no note controls, and saves never create an implicit note wrapper.
 - Add note and Edit note use small native Obsidian buttons, visible at rest, below the answer.
 - Context may appear before the answer, but recommendations belong inside it. Other direct callout types leave the question without controls.
 - Tabs, LF/CRLF line endings, custom titles, collapsible callouts, and nested task questions are supported. Questions inside quotes, code, HTML, frontmatter, and embeds receive no controls.

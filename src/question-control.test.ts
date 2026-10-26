@@ -102,6 +102,32 @@ const nativeNote =
 	'<div class="callout" data-callout="note"><div class="callout-content">Ask Friday</div></div>'
 
 describe('one compact question box', () => {
+	it.each(['', '  > [!answer]\n'])(
+		'does not offer note controls without explicit note syntax: %s',
+		(body) => {
+			const source = '- [ ] Q?\n' + body
+			const note = new Note(source)
+			const { root, box, control } = note.mount(outer(''))
+			assert.strictEqual(box.querySelector('.answer-note'), null)
+			assert.ok(!box.textContent?.includes('Add note'))
+			assert.strictEqual(note.writes, 0)
+			assert.strictEqual(note.source, source)
+			control.unload()
+			root.remove()
+		},
+	)
+
+	it('offers Add note only for an explicit empty nested note', () => {
+		const note = new Note('- [ ] Q?\n  > [!answer]\n  >\n  > > [!note]\n  > >\n')
+		const { root, box, control } = note.mount(outer(''))
+		assert.strictEqual(box.querySelectorAll('.answer-note').length, 1)
+		click(box, 'Add note')
+		assert.strictEqual(box.querySelector<HTMLTextAreaElement>('.answer-note textarea')?.value, '')
+		assert.strictEqual(note.writes, 0)
+		control.unload()
+		root.remove()
+	})
+
 	it('renders a single suggestion and Other, saves once per click, and stays editable after redraw', async () => {
 		const source = '- [ ] Q?\n  > [!answer|choice]\n  > - [ ] 🤖 After lunch\n'
 		const note = new Note(source)
@@ -188,7 +214,7 @@ describe('one compact question box', () => {
 		assert.strictEqual(box.querySelector<HTMLElement>('.answer-other-editor')?.hidden, true)
 		assert.strictEqual(box.classList.contains('answer-answered'), true)
 		assert.strictEqual(root.querySelectorAll('.callout').length, 1)
-		assert.ok(box.querySelector('.answer-note') !== null)
+		assert.strictEqual(box.querySelector('.answer-note'), null)
 		control.unload()
 		root.remove()
 	})
