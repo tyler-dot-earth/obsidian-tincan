@@ -72,7 +72,7 @@ export const matchTarget = (source: string, target: AnswerTarget): QuestionBlock
 
 	if (!editableField(block, target.field))
 		throw new AnswerError({
-			message: 'The question is completed or ambiguous; your draft is kept.',
+			message: 'The question is ambiguous; your draft is kept.',
 		})
 
 	const slot = fieldSlots(block, target.field)[0]

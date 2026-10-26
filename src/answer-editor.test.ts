@@ -5,7 +5,7 @@ import { mountEditor } from '#/src/answer-editor'
 import { targetFor } from '#/src/answer-target'
 import { Drafts } from '#/src/drafts'
 
-const target = targetFor('- [ ] Which day?\n  > [!answer]\n', 'Which day?')
+const target = targetFor('> [!question] Which day?\n', 'Which day?')
 
 const container = (): HTMLDivElement => {
 	const element = document.createElement('div')
@@ -81,7 +81,7 @@ describe('draft lifecycle', () => {
 
 		const changed = drafts.get(original, {
 			...target,
-			context: '- [ ] Which day?\n  - New context',
+			context: '> [!question]+ Which day?',
 		})
 
 		assert.strictEqual(other.text, '')

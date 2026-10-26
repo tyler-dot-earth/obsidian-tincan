@@ -4,9 +4,9 @@ import { AnswerError, targetFor, writeAnswer } from '#/src/answer-target'
 import { canAnswer, canEdit, questionBlocks } from '#/src/question-blocks'
 
 const question = (kind: string, body: string): string =>
-	`- [ ] Which route?\n\n  > [!answer|${kind}]\n${body}\n`
+	`> [!question|${kind}] Which route?\n${body}\n`
 
-const options = '  > - [ ] River\n  > - [ ] Park'
+const options = '> - [ ] River\n> - [ ] Park'
 
 describe('choice Markdown', () => {
 	it('offers unanswered choices and editing selected choices without parsing options as questions', () => {
@@ -23,25 +23,22 @@ describe('choice Markdown', () => {
 	it('leaves malformed, nested, empty, duplicate, or unsupported options without controls', () => {
 		for (const body of [
 			'',
-			'  > - River',
-			'  > - [ ] River\n  >   - [ ] Park',
-			'  > - [ ] River\n  > - [ ] River',
-			'  > Instructions\n' + options,
-			'  > - [x] River\n  > - [x] Park',
-			'  > - [x] River\n  > - [ ] Park\n  >\n  > Other: A bus ride',
-			'  > - [ ] River\n  > continuation',
+			'> - River',
+			'> - [ ] River\n>   - [ ] Park',
+			'> - [ ] River\n> - [ ] River',
+			'> Instructions\n' + options,
+			'> - [x] River\n> - [x] Park',
+			'> - [x] River\n> - [ ] Park\n>\n> Other: A bus ride',
+			'> - [ ] River\n> continuation',
 		]) {
 			assert.ok(!questionBlocks(question('choice', body)).some(canEdit), body)
 			assert.throws(() => targetFor(question('choice', body), 'Which route?'), AnswerError)
 		}
 
 		assert.ok(!questionBlocks(question('unknown', options)).some(canEdit))
-		assert.ok(
-			!questionBlocks(question('choices', options) + '\n  > [!answer|unknown]\n').some(canEdit),
-		)
 	})
 
-	it('writes single and multiple picks as task markers with parent and unrelated text intact', () => {
+	it('writes single and multiple picks as task markers with title and unrelated text intact', () => {
 		for (const kind of ['choice', 'choices']) {
 			const source = 'Before\n\n' + question(kind, options) + '\nAfter\n'
 			const target = targetFor(source, 'Which route?')
@@ -56,14 +53,14 @@ describe('choice Markdown', () => {
 		}
 	})
 
-	it('edits picks while preserving CRLF, tabs, titles, blank lines, and option bytes', () => {
+	it('edits picks while preserving CRLF, indentation, titles, blank lines, and option bytes', () => {
 		const source =
-			'- [ ] Which route?\r\n\t> [!answer|choices]- Routes\r\n\t>\r\n\t> - [X] River > - [ ] untouched\r\n\t> - [ ] Park'
+			'  > [!question|choices]- Which route?\r\n  >\r\n  > - [X] River > - [ ] untouched\r\n  > - [ ] Park'
 
 		const target = targetFor(source, 'Which route?')
 		assert.strictEqual(
 			writeAnswer(source, target, '- [ ] River > - [ ] untouched\n- [x] Park'),
-			'- [ ] Which route?\r\n\t> [!answer|choices]- Routes\r\n\t>\r\n\t> - [ ] River > - [ ] untouched\r\n\t> - [x] Park',
+			'  > [!question|choices]- Which route?\r\n  >\r\n  > - [ ] River > - [ ] untouched\r\n  > - [x] Park',
 		)
 	})
 
@@ -81,7 +78,7 @@ describe('choice Markdown', () => {
 			assert.throws(() => writeAnswer(source, target, answer), AnswerError)
 	})
 
-	it('rejects changes to picks, options, kind, title, context, completion, or target uniqueness', () => {
+	it('rejects changes to picks, options, kind, title, context, or target uniqueness', () => {
 		const source = question('choice', options.replace('[ ] River', '[x] River'))
 		const target = targetFor(source, 'Which route?')
 
@@ -91,7 +88,6 @@ describe('choice Markdown', () => {
 			source.replace('|choice]', '|choices]'),
 			source.replace('choice]', 'choice] Routes'),
 			source.replace('Which route?', 'Which route?\n  New context'),
-			source.replace('- [ ] Which', '- [x] Which'),
 			source + '\n' + source,
 		])
 			assert.throws(() => writeAnswer(changed, target, '- [ ] River\n- [x] Park'), AnswerError)

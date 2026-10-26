@@ -5,16 +5,16 @@ import { canAnnotate, canEdit, questionBlocks } from '#/src/question-blocks'
 import { sectionTargets } from '#/src/section-targets'
 
 const base =
-	'- [x] Walk?\n  > [!answer|choice]\n  > - [ ] 🤖 Short walk\n  > - [ ] Long walk\n  >\n  > Other: A picnic in the park\n'
+	'> [!question|choice] Walk?\n> - [ ] 🤖 Short walk\n> - [ ] Long walk\n>\n> Other: A picnic in the park\n'
 
-const note = '  >\n  > > [!note]\n  > > Leaning A; ask after X\n'
+const note = '>\n> > [!note]\n> > Leaning A; ask after X\n'
 
 describe('notes within an answer', () => {
-	it('parses answer and trailing note independently, including Other-only answers on checked tasks', () => {
+	it('parses answer and trailing note independently, including Other-only answers', () => {
 		const blocks = questionBlocks(base + note)
 		const block = blocks[0]
 		assert.ok(block !== undefined && canEdit(block) && canAnnotate(block))
-		assert.strictEqual(block.slots[0]?.source, base.slice(base.indexOf('  >')))
+		assert.strictEqual(block.slots[0]?.source, base.slice(base.indexOf('>')))
 		assert.strictEqual(block.slots[0]?.content?.kind, 'choice')
 		const content = block.slots[0]?.content
 		assert.strictEqual(
@@ -34,7 +34,7 @@ describe('notes within an answer', () => {
 
 	it('adds a note inside the existing answer and keeps its earlier answer snapshot valid', () => {
 		const answer = targetFor(base, 'Walk?')
-		const seeded = base + '  >\n  > > [!note]\n  > >\n'
+		const seeded = base + '>\n> > [!note]\n> >\n'
 		const comment = targetFor(seeded, 'Walk?', 'note')
 		const withNote = writeAnswer(seeded, comment, 'Leaning A; ask after X')
 		assert.strictEqual(withNote, base + note)
@@ -48,7 +48,7 @@ describe('notes within an answer', () => {
 		assert.strictEqual(both, (base + note).replace('A picnic in the park', 'A different picnic'))
 	})
 
-	it('edits and clears nested notes without touching typed answers, options, or task states', () => {
+	it('edits and clears nested notes without touching typed answers, options, or question titles', () => {
 		const source = base + note
 		const changed = writeAnswer(source, targetFor(source, 'Walk?', 'note'), 'Ask after Friday')
 		assert.strictEqual(changed, source.replace('Leaning A; ask after X', 'Ask after Friday'))
@@ -57,16 +57,15 @@ describe('notes within an answer', () => {
 			AnswerError,
 		)
 		const cleared = writeAnswer(changed, targetFor(changed, 'Walk?', 'note'), '')
-		assert.strictEqual(cleared, base + '  >\n  > > [!note]\n  > > \n')
+		assert.strictEqual(cleared, base + '>\n> > [!note]\n> > \n')
 		assert.strictEqual(
 			targetFor(cleared, 'Walk?').answer?.source,
 			targetFor(base, 'Walk?').answer?.source,
 		)
 	})
 
-	it('keeps CRLF, tabs, and a missing final newline while editing a checked typed answer', () => {
-		const source =
-			'- [x] When?\r\n\t> [!answer]\r\n\t> Tomorrow\r\n\t>\r\n\t> > [!note]\r\n\t> > Ask again'
+	it('keeps CRLF and a missing final newline while editing a typed answer', () => {
+		const source = '> [!question] When?\r\n> Tomorrow\r\n>\r\n> > [!note]\r\n> > Ask again'
 
 		const saved = writeAnswer(source, targetFor(source, 'When?'), 'Friday')
 		assert.strictEqual(saved, source.replace('Tomorrow', 'Friday'))
@@ -77,9 +76,9 @@ describe('notes within an answer', () => {
 	})
 
 	it('keeps code examples as answer text and refuses malformed or duplicate note fields', () => {
-		const code = '- [ ] Q?\n  > [!answer]\n  > ```md\n  > > [!note]\n  > > Example\n  > ```\n'
+		const code = '> [!question] Q?\n> ```md\n> > [!note]\n> > Example\n> ```\n'
 		assert.strictEqual(questionBlocks(code)[0]?.notes.length, 0)
-		const duplicate = base + note + '  >\n  > > [!note]\n  > > Second note\n'
+		const duplicate = base + note + '>\n> > [!note]\n> > Second note\n'
 		assert.throws(() => targetFor(duplicate, 'Walk?', 'note'), AnswerError)
 	})
 })

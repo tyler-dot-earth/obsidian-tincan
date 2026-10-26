@@ -26,9 +26,7 @@
 		"effect": "4.0.0-rc.113",
 		"mdast-util-from-markdown": "2.1.0",
 		"mdast-util-frontmatter": "2.0.1",
-		"mdast-util-gfm-task-list-item": "2.0.0",
-		"micromark-extension-frontmatter": "2.0.0",
-		"micromark-extension-gfm-task-list-item": "2.1.0"
+		"micromark-extension-frontmatter": "2.0.0"
 	},
 	"devDependencies": {
 		"@effect/language-service": "0.87.2",

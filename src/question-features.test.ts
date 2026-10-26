@@ -6,7 +6,7 @@ import { AnswerError, targetFor, writeAnswer } from '#/src/answer-target'
 import { canAnnotate, questionBlocks } from '#/src/question-blocks'
 import { saveAnswer } from '#/src/save-answer'
 
-const pick = '- [ ] Walk?\n  > [!answer|choice]\n  > - [ ] 🤖 A short walk\n  > - [ ] Stay home\n'
+const pick = '> [!question|choice] Walk?\n> - [ ] 🤖 A short walk\n> - [ ] Stay home\n'
 
 describe('Other and side-note Markdown', () => {
 	it('counts free text or a recommended pick as answered, independently of side notes', () => {
@@ -18,7 +18,7 @@ describe('Other and side-note Markdown', () => {
 		assert.ok(content !== undefined && isAnswered(content))
 		const checked = answerContent('choice', '- [x] 🤖 A short walk\n- [ ] Stay home')
 		assert.ok(checked !== undefined && isAnswered(checked))
-		const block = questionBlocks(pick + '  >\n  > > [!note]\n  > > Leaning toward a walk.\n')[0]
+		const block = questionBlocks(pick + '>\n> > [!note]\n> > Leaning toward a walk.\n')[0]
 		assert.strictEqual(block?.slots[0]?.blank, true)
 		assert.strictEqual(block?.notes[0]?.blank, false)
 	})
@@ -40,8 +40,8 @@ describe('Other and side-note Markdown', () => {
 		assert.strictEqual(
 			saved,
 			source.replace(
-				'  > - [ ] Stay home\r\n',
-				'  > - [ ] Stay home\r\n  >\r\n  > Other: Bring a friend\r\n  > \r\n  > - Ask about timing\r\n',
+				'> - [ ] Stay home\r\n',
+				'> - [ ] Stay home\r\n>\r\n> Other: Bring a friend\r\n> \r\n> - Ask about timing\r\n',
 			),
 		)
 
@@ -66,7 +66,7 @@ describe('Other and side-note Markdown', () => {
 	it('preserves Other prose, nested checklists, CRLF and missing final newline during a pick', () => {
 		const source =
 			pick.replace('|choice]', '|choices]').replace(/\n/g, '\r\n') +
-			'  >\r\n  > Other: A picnic in the park\r\n  > - [ ] Leave this text alone'
+			'>\r\n> Other: A picnic in the park\r\n> - [ ] Leave this text alone'
 
 		assert.strictEqual(
 			writeAnswer(
@@ -79,7 +79,7 @@ describe('Other and side-note Markdown', () => {
 	})
 
 	it('keeps a missing final newline when clearing an Other-only answer', () => {
-		const source = pick + '  >\n  > Other: Later'
+		const source = pick + '>\n> Other: Later'
 
 		const cleared = writeAnswer(
 			source,
@@ -87,11 +87,11 @@ describe('Other and side-note Markdown', () => {
 			'- [ ] 🤖 A short walk\n- [ ] Stay home',
 		)
 
-		assert.strictEqual(cleared, pick + '  >')
+		assert.strictEqual(cleared, pick + '>')
 	})
 
 	it('refuses changed Other', () => {
-		const source = pick + '  >\n  > Other: Later\n'
+		const source = pick + '>\n> Other: Later\n'
 		assert.throws(
 			() =>
 				writeAnswer(
@@ -103,21 +103,19 @@ describe('Other and side-note Markdown', () => {
 		)
 	})
 
-	it.each(['- [ ]', '- [x]'])('refuses implicit note fields on %s tasks', (task) => {
-		for (const body of ['', '  > [!answer]\n']) {
-			const source = task + ' Revisit this?\n' + body
-			const block = questionBlocks(source)[0]
-			assert.ok(block !== undefined)
-			assert.strictEqual(canAnnotate(block), false)
-			assert.throws(() => targetFor(source, 'Revisit this?', 'note'), AnswerError)
-		}
+	it.each(['', '>\n'])('refuses implicit note fields with body %s', (body) => {
+		const source = '> [!question] Revisit this?\n' + body
+		const block = questionBlocks(source)[0]
+		assert.ok(block !== undefined)
+		assert.strictEqual(canAnnotate(block), false)
+		assert.throws(() => targetFor(source, 'Revisit this?', 'note'), AnswerError)
 	})
 
 	it.effect(
 		'validates side-note source and original-file guards inside the same Effect write program',
 		() =>
 			Effect.gen(function* () {
-				let source = '- [ ] Revisit?\n  > [!answer]\n  >\n  > > [!note]\n  > >\n'
+				let source = '> [!question] Revisit?\n>\n> > [!note]\n> >\n'
 				let writes = 0
 				let available = true
 
@@ -139,7 +137,7 @@ describe('Other and side-note Markdown', () => {
 				available = true
 				yield* saveAnswer(writer, opened, 'Ask after Friday')
 				assert.strictEqual(writes, 1)
-				assert.match(source, /\[!note\]\n  > > Ask after Friday/)
+				assert.match(source, /\[!note\]\n> > Ask after Friday/)
 				yield* Effect.flip(saveAnswer(writer, opened, 'Stale insertion'))
 				assert.strictEqual(writes, 1)
 			}),

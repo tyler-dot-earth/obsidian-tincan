@@ -5,11 +5,11 @@ import { applyAppearance } from '#/src/answer-appearance'
 import { questionBlocks } from '#/src/question-blocks'
 
 describe('answer appearance', () => {
-	it('assigns distinct classes from saved content, including Other-only and completed answers', () => {
+	it('assigns distinct classes from saved content, including Other-only and saved text answers', () => {
 		const cases = [
-			['- [ ] Q?\n  > [!answer]\n', 'answer-unanswered'],
-			['- [x] Q?\n  > [!answer]\n  > Existing\n', 'answer-answered'],
-			['- [ ] Q?\n  > [!answer|choice]\n  > - [ ] 🤖 A\n  >\n  > Other: B\n', 'answer-answered'],
+			['> [!question] Q?\n', 'answer-unanswered'],
+			['> [!question] Q?\n> Existing\n', 'answer-answered'],
+			['> [!question|choice] Q?\n> - [ ] 🤖 A\n>\n> Other: B\n', 'answer-answered'],
 		]
 
 		for (const [source, expected] of cases) {

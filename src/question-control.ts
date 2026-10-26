@@ -35,12 +35,11 @@ export class QuestionControl {
 		const body = this.box.ownerDocument.createElement('div')
 		body.className = 'callout-content'
 
-		if (this.block.slots.length !== 0)
-			body.append(
-				...this.original.filter(
-					(node) => !Array.from(this.hidden.keys()).some((note) => note === node),
-				),
-			)
+		body.append(
+			...this.original.filter(
+				(node) => !Array.from(this.hidden.keys()).some((note) => note === node),
+			),
+		)
 		answer.append(body)
 		this.content.replaceChildren(answer)
 
@@ -60,7 +59,7 @@ export class QuestionControl {
 	}
 
 	private addKind(): void {
-		const kind = this.block.slots[0]?.content?.kind
+		const kind = this.block.slots[0].content?.kind
 
 		if (kind === undefined || kind === 'text') return
 		this.badge.textContent = kind === 'choice' ? 'pick 1' : 'pick 1+'

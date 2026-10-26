@@ -5,56 +5,40 @@ import { canAnnotate, canAnswer, canEdit, questionBlocks } from '#/src/question-
 import { sectionTargets } from '#/src/section-targets'
 
 describe('questionBlocks', () => {
-	it('leaves unsupported question context without answer or note controls', () => {
-		for (const context of [
-			'  - 🤖 Tomorrow\n\n  > [!answer]\n',
-			'  - [ ] 🤖 Tomorrow\n\n  > [!answer]\n',
-			'  - [x] 🤖 Tomorrow\n\n  > [!answer]\n',
-			'  > [!aside]\n  > Ask Friday\n',
-			'  > [!answer]\n\n  > [!aside]\n  > Ask Friday\n',
-		]) {
-			const source = '- [ ] Q?\n' + context
-			const block = questionBlocks(source)[0]
-			assert.ok(block !== undefined)
-			assert.strictEqual(canEdit(block), false)
-			assert.strictEqual(canAnnotate(block), false)
-			assert.throws(() => targetFor(source, 'Q?'), AnswerError)
-			assert.throws(() => targetFor(source, 'Q?', 'note'), AnswerError)
-		}
-	})
-
-	it('keeps unsupported questions in source-order and duplicate checks', () => {
-		const plain = '- [ ] Q?\n  - 🤖 Tomorrow\n\n  > [!answer]\n'
-		const current = '- [ ] Current?\n  > [!answer]\n  > 🤖 After lunch\n'
-		const source = plain + '\n' + current
+	it('keeps unsupported kinds in source order and duplicate checks', () => {
+		const unsupported = '> [!question|unknown] Q?\n> Tomorrow\n'
+		const current = '> [!question] Current?\n> 🤖 After lunch\n'
 		assert.deepStrictEqual(
-			sectionTargets({ text: source, lineStart: 0, lineEnd: 20 }, 2).map((block) => block.question),
+			sectionTargets({ text: unsupported + '\n' + current, lineStart: 0, lineEnd: 20 }, 2).map(
+				(block) => block.question,
+			),
 			['Q?', 'Current?'],
 		)
+		assert.throws(() => targetFor(unsupported, 'Q?'), AnswerError)
 		assert.throws(
-			() => targetFor(plain + '\n' + current.replace('Current?', 'Q?'), 'Q?'),
+			() => targetFor(unsupported + '\n' + current.replace('Current?', 'Q?'), 'Q?'),
 			/duplicated/,
 		)
 	})
 
-	it('associates a direct callout with its question across context', () => {
-		const blocks = questionBlocks(
-			'- [ ] Which route?\n  - context: Choose one.\n\n  > [!answer]\n  >\n\n- [ ] When?\n  > [!answer]\n',
-		)
-
+	it('uses the question header for identity and source offsets', () => {
+		const source = 'Context above.\n\n> [!question]- Which route?\n>\n\n> [!question] When?\n'
+		const blocks = questionBlocks(source)
 		assert.deepStrictEqual(
-			blocks.map((block) => [block.question, block.slots.length, canAnswer(block)]),
+			blocks.map((block) => [block.question, canAnswer(block)]),
 			[
-				['Which route?', 1, true],
-				['When?', 1, true],
+				['Which route?', true],
+				['When?', true],
 			],
 		)
-		assert.strictEqual(blocks[0]?.slots[0]?.line, 3)
+		assert.strictEqual(blocks[0]?.line, 2)
+		assert.strictEqual(blocks[0]?.slots[0].source, '> [!question]- Which route?\n>\n')
+		assert.strictEqual(blocks[0]?.context, '> [!question]- Which route?')
 	})
 
-	it('ignores frontmatter, code fences, indented code, HTML, and quoted questions', () => {
+	it('ignores metadata, fenced and indented code, HTML, quotes, and list-contained callouts', () => {
 		const source =
-			'---\nexample: |\n  - [ ] YAML?\n    > [!answer]\n---\n\n```md\n- [ ] Fenced?\n  > [!answer]\n```\n\n    - [ ] Code?\n      > [!answer]\n\n<!--\n- [ ] Comment?\n  > [!answer]\n-->\n\n> - [ ] Quoted?\n>   > [!answer]\n\n- [ ] Real?\n  > [!answer]\n'
+			'---\nexample: |\n  > [!question] YAML?\n---\n\n```md\n> [!question] Fenced?\n```\n\n    > [!question] Code?\n\n<!--\n> [!question] Comment?\n-->\n\n> Quoted example\n>\n> > [!question] Quoted?\n\n- Context\n  > [!question] Listed?\n\n> [!question] Real?\n'
 
 		assert.deepStrictEqual(
 			questionBlocks(source).map((block) => block.question),
@@ -62,46 +46,34 @@ describe('questionBlocks', () => {
 		)
 	})
 
-	it('finds nested questions without attaching their slots to an outer question', () => {
-		const blocks = questionBlocks('- [ ] Outer?\n  - [ ] Inner?\n    > [!answer]\n')
-		assert.strictEqual(blocks[0]?.slots.length, 0)
-		assert.strictEqual(blocks[1]?.slots.length, 1)
-		assert.ok(blocks[1] !== undefined && canAnswer(blocks[1]))
+	it('preserves supported callout indentation', () => {
+		const block = questionBlocks('  > [!question] Indented?\n  >\n')[0]
+		assert.ok(block !== undefined && canAnswer(block))
+		assert.strictEqual(block.slots[0].prefix, '  >')
 	})
 
-	it('recognizes tabs in list continuation indentation', () => {
-		const blocks = questionBlocks('- [ ] Tabbed?\n\t> [!answer]\n\t>\n')
-		assert.ok(blocks[0] !== undefined && canAnswer(blocks[0]))
-		assert.strictEqual(blocks[0]?.slots[0]?.prefix, '\t>')
-	})
-
-	it('treats text, nested quotes, lists, and lazy continuation as filled answers', () => {
-		for (const content of ['  > Existing', '  >> Nested', '  > - one\n  > - two', '  Lazy text']) {
-			const blocks = questionBlocks(`- [ ] Filled?\n  > [!answer]\n${content}\n`)
-			assert.ok(blocks[0] !== undefined && !canAnswer(blocks[0]), content)
+	it('treats text, nested quotes, lists, and recommendations as filled text answers', () => {
+		for (const content of ['> Existing', '>> Nested', '> - one\n> - two', '> 🤖 Tomorrow']) {
+			const block = questionBlocks(`> [!question] Filled?\n${content}\n`)[0]
+			assert.ok(block !== undefined && canEdit(block) && !canAnswer(block), content)
 		}
 	})
 
-	it('keeps completed questions editable', () => {
-		assert.ok(questionBlocks('- [x] Done?\n  > [!answer]\n').some(canAnswer))
+	it('refuses controls for lazy body lines and merged question headers', () => {
+		for (const body of ['> Existing\nLazy text\n', '> First\n> [!question] Second?\n> Answer\n']) {
+			const source = '> [!question] Q?\n' + body
+			const block = questionBlocks(source)[0]
+			assert.ok(block !== undefined && !canEdit(block) && !canAnnotate(block))
+			assert.throws(() => targetFor(source, 'Q?'), AnswerError)
+		}
 	})
 
-	it('allows ordinary checked subtasks in question context', () => {
-		const blocks = questionBlocks(
-			'- [ ] Pick?\n  - [x] Gather context\n\n  > [!answer]- Your answer\n  >\n',
-		)
-
-		assert.ok(blocks[0] !== undefined && canAnswer(blocks[0]))
-	})
-
-	it('refuses multiple answer callouts and ignores callouts inside examples', () => {
-		const multiple = questionBlocks('- [ ] Pick?\n  > [!answer]\n\n  > [!answer]\n')
-		assert.ok(!multiple.some(canAnswer))
-		const example = questionBlocks('- [ ] Example?\n  ```md\n  > [!answer]\n  ```\n')
-		assert.strictEqual(example[0]?.slots.length, 0)
-	})
-
-	it('requires a task parent', () => {
-		assert.deepStrictEqual(questionBlocks('Question?\n\n> [!answer]\n'), [])
+	it('requires a standalone callout with an explicit title', () => {
+		for (const source of [
+			'- [ ] Task?\n  > Ordinary quote\n',
+			'> [!question]\n> Answer\n',
+			'> [!note] Not a question\n',
+		])
+			assert.deepStrictEqual(questionBlocks(source), [])
 	})
 })

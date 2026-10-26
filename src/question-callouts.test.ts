@@ -30,15 +30,14 @@ describe('question in a callout', () => {
 		},
 	)
 
-	it('keeps legacy and title questions in source order and validates duplicates across both', () => {
-		const legacy = '- [x] Legacy?\n  > [!answer] Custom title\n  > Answer\n'
-		const source = legacy + '\n> [!question] Modern?\n>\n'
+	it('keeps callouts in source order and validates duplicate titles across kinds', () => {
+		const first = '> [!question] First?\n> Answer\n'
+		const source = first + '\n> [!question] Modern?\n>\n'
 		assert.deepStrictEqual(
 			sectionTargets({ text: source, lineStart: 0, lineEnd: 20 }, 2).map((block) => block.question),
-			['Legacy?', 'Modern?'],
+			['First?', 'Modern?'],
 		)
-		assert.strictEqual(questionBlocks(source)[0]?.completed, true)
-		assert.throws(() => targetFor(source.replace('Modern?', 'Legacy?'), 'Legacy?'), /duplicated/)
+		assert.throws(() => targetFor(source.replace('Modern?', 'First?'), 'First?'), /duplicated/)
 		assert.throws(
 			() => targetFor(source + '\n> [!question|unknown] Modern?\n> Example\n', 'Modern?'),
 			/duplicated/,

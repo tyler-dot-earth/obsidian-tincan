@@ -8,7 +8,7 @@ import { type Draft, Drafts } from '#/src/drafts'
 import { type AnswerWriter, saveAnswer } from '#/src/save-answer'
 
 const sourceFor = (kind: string): string =>
-	`Before\n\n- [ ] Which?\n  > [!answer|${kind}]\n  > - [ ] River\n  > - [ ] Park\n\nAfter\n`
+	`Before\n\n> [!question|${kind}] Which?\n> - [ ] River\n> - [ ] Park\n\nAfter\n`
 
 interface MountedControl {
 	readonly element: HTMLElement
@@ -305,51 +305,45 @@ describe('direct reading-view picks', () => {
 		close(mounted)
 	})
 
-	it.each([
-		'answer',
-		'options',
-		'kind',
-		'context',
-		'duplicate',
-		'completed',
-		'deleted',
-		'editable',
-	])('refuses a %s change inside Vault.process and retains the attempted picks', async (change) => {
-		const original = sourceFor('choices')
-		const note = new Note(original)
-		note.defer = true
-		const mounted = note.mount()
-		input(mounted.element, 0).click()
+	it.each(['answer', 'options', 'kind', 'context', 'duplicate', 'header', 'deleted', 'editable'])(
+		'refuses a %s change inside Vault.process and retains the attempted picks',
+		async (change) => {
+			const original = sourceFor('choices')
+			const note = new Note(original)
+			note.defer = true
+			const mounted = note.mount()
+			input(mounted.element, 0).click()
 
-		const changes = new Map([
-			['answer', original.replace('[ ] Park', '[x] Park')],
-			['options', original.replace('River', 'Beach')],
-			['kind', original.replace('|choices]', '|choice]')],
-			['context', original.replace('Which?', 'Which?\n  New context')],
-			['duplicate', original + '\n' + original],
-			['completed', original.replace('[ ] Which?', '[x] Which?')],
-		])
+			const changes = new Map([
+				['answer', original.replace('[ ] Park', '[x] Park')],
+				['options', original.replace('River', 'Beach')],
+				['kind', original.replace('|choices]', '|choice]')],
+				['context', original.replace('Which?', 'Which?\n  New context')],
+				['duplicate', original + '\n' + original],
+				['header', original.replace('[!question|choices]', '[!question|choices]+')],
+			])
 
-		note.source = changes.get(change) ?? original
-		note.exists = change !== 'deleted'
-		note.inEditor = change === 'editable'
-		const current = note.source
-		note.finish?.()
-		await note.lastSave
-		assert.strictEqual(note.writes, 0)
-		assert.strictEqual(note.source, current)
-		assert.ok(note.error.length > 0)
-		assert.strictEqual(mounted.draft.text, '- [x] River\n- [ ] Park')
-		assert.strictEqual(note.drafts.pending()[0]?.draft, mounted.draft)
-		assert.match(mounted.element.querySelector('[role=status]')?.textContent ?? '', /Not saved/)
-		assert.strictEqual(
-			Array.from(mounted.element.querySelectorAll('button')).find(
-				(button) => button.textContent === 'Retry',
-			)?.hidden,
-			false,
-		)
-		close(mounted)
-	})
+			note.source = changes.get(change) ?? original
+			note.exists = change !== 'deleted'
+			note.inEditor = change === 'editable'
+			const current = note.source
+			note.finish?.()
+			await note.lastSave
+			assert.strictEqual(note.writes, 0)
+			assert.strictEqual(note.source, current)
+			assert.ok(note.error.length > 0)
+			assert.strictEqual(mounted.draft.text, '- [x] River\n- [ ] Park')
+			assert.strictEqual(note.drafts.pending()[0]?.draft, mounted.draft)
+			assert.match(mounted.element.querySelector('[role=status]')?.textContent ?? '', /Not saved/)
+			assert.strictEqual(
+				Array.from(mounted.element.querySelectorAll('button')).find(
+					(button) => button.textContent === 'Retry',
+				)?.hidden,
+				false,
+			)
+			close(mounted)
+		},
+	)
 
 	it('keeps failed picks through redraw and retries them without an extra write', async () => {
 		const note = new Note(sourceFor('choices'))
@@ -429,8 +423,8 @@ describe('direct reading-view picks', () => {
 
 	it('switches a single pick from Other to an option and back in one write per action', async () => {
 		const original = sourceFor('choice').replace(
-			'  > - [ ] Park\n',
-			'  > - [ ] Park\n  >\n  > Other: A picnic\n  >\n  > > [!note]\n  > > Ask Friday\n',
+			'> - [ ] Park\n',
+			'> - [ ] Park\n>\n> Other: A picnic\n>\n> > [!note]\n> > Ask Friday\n',
 		)
 
 		const note = new Note(original)
@@ -611,10 +605,7 @@ describe('direct reading-view picks', () => {
 
 	it('collapses a saved Other answer, checks its row, and clears it in one safe click', async () => {
 		const note = new Note(
-			sourceFor('choice').replace(
-				'  > - [ ] Park\n',
-				'  > - [ ] Park\n  >\n  > Other: My own answer\n',
-			),
+			sourceFor('choice').replace('> - [ ] Park\n', '> - [ ] Park\n>\n> Other: My own answer\n'),
 		)
 
 		const mounted = note.mount()

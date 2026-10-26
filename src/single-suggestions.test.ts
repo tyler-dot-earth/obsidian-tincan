@@ -7,12 +7,12 @@ import { Draft } from '#/src/drafts'
 import { canAnswer, questionBlocks } from '#/src/question-blocks'
 import { saveAnswer } from '#/src/save-answer'
 
-const suggested = '- [ ] When?\n  > [!answer|choice]\n  > - [ ] 🤖 After lunch\n'
+const suggested = '> [!question|choice] When?\n> - [ ] 🤖 After lunch\n'
 
 describe('single-option suggestions', () => {
 	it('keeps the suggestion unchecked and the draft ready to pick, independently of recommendation text in notes', () => {
 		const source =
-			'- [ ] When?\n  > [!answer|choice]\n  >\n  > - [ ] 🤖 After lunch\n  >\n  > > [!note]\n  > > 🤖 Ask again Friday\n'
+			'> [!question|choice] When?\n>\n> - [ ] 🤖 After lunch\n>\n> > [!note]\n> > 🤖 Ask again Friday\n'
 
 		const block = questionBlocks(source)[0]
 		assert.ok(block !== undefined && canAnswer(block))
@@ -47,7 +47,7 @@ describe('single-option suggestions', () => {
 	it.effect('checks the suggestion once while preserving CRLF and a concurrently edited note', () =>
 		Effect.gen(function* () {
 			const source =
-				'Heading\r\n\r\n- [x] When?\r\n  > [!answer|choice] Timing\r\n  > - [ ] 🤖 After lunch\r\n  >\r\n  > > [!note]\r\n  > > Ask Friday\r\n\r\nTail'
+				'Heading\r\n\r\n> [!question|choice] When?\r\n> - [ ] 🤖 After lunch\r\n>\r\n> > [!note]\r\n> > Ask Friday\r\n\r\nTail'
 
 			const target = targetFor(source, 'When?')
 			assert.deepStrictEqual(target.answer?.content, {

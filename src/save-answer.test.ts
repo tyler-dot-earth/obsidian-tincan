@@ -5,7 +5,7 @@ import { targetFor } from '#/src/answer-target'
 import { Drafts } from '#/src/drafts'
 import { type AnswerWriter, saveAnswer } from '#/src/save-answer'
 
-const note = '- [ ] Which?\n  > [!answer]\n'
+const note = '> [!question] Which?\n'
 
 const target = targetFor(note, 'Which?')
 
@@ -45,7 +45,7 @@ describe('saveAnswer', () => {
 			yield* saveAnswer(vault, draft.target, draft.text)
 			assert.strictEqual(
 				vault.source,
-				'# Inserted by another writer\n\n- [ ] Which?\n  > [!answer]\n  > The second option\n',
+				'# Inserted by another writer\n\n> [!question] Which?\n> The second option\n',
 			)
 			assert.strictEqual(vault.writes, 1)
 		}),
@@ -92,7 +92,7 @@ describe('saveAnswer', () => {
 			assert.strictEqual(draft.text, 'Retry me')
 			vault.writeFails = false
 			yield* saveAnswer(vault, draft.target, draft.text)
-			assert.strictEqual(vault.source, '- [ ] Which?\n  > [!answer]\n  > Retry me\n')
+			assert.strictEqual(vault.source, '> [!question] Which?\n> Retry me\n')
 		}),
 	)
 })
@@ -101,8 +101,7 @@ it.effect('edits the saved text answer once and refuses a concurrent answer chan
 	Effect.gen(function* () {
 		const vault = new MemoryVault()
 
-		const source =
-			'- [ ] What should we do this weekend?\n  > [!answer]\n  > A picnic in the park\n'
+		const source = '> [!question] What should we do this weekend?\n> A picnic in the park\n'
 
 		vault.source = source
 		const opened = targetFor(source, 'What should we do this weekend?')
@@ -131,7 +130,7 @@ it.effect('edits the saved text answer once and refuses a concurrent answer chan
 it.effect('keeps choice edits on write failure, then retries through the real writer', () =>
 	Effect.gen(function* () {
 		const vault = new MemoryVault()
-		vault.source = '- [ ] Which?\n  > [!answer|choice]\n  > - [x] River\n  > - [ ] Park\n'
+		vault.source = '> [!question|choice] Which?\n> - [x] River\n> - [ ] Park\n'
 		const draft = new Drafts<string>().get('original.md', targetFor(vault.source, 'Which?'))
 		draft.text = '- [ ] River\n- [x] Park'
 		vault.writeFails = true
@@ -141,9 +140,6 @@ it.effect('keeps choice edits on write failure, then retries through the real wr
 		vault.writeFails = false
 		yield* saveAnswer(vault, draft.target, draft.text)
 		assert.strictEqual(vault.writes, 1)
-		assert.strictEqual(
-			vault.source,
-			'- [ ] Which?\n  > [!answer|choice]\n  > - [ ] River\n  > - [x] Park\n',
-		)
+		assert.strictEqual(vault.source, '> [!question|choice] Which?\n> - [ ] River\n> - [x] Park\n')
 	}),
 )

@@ -9,10 +9,7 @@ import {
 import type { SourceLine } from '#/src/markdown-lines'
 import type { AnswerSlot } from '#/src/question-blocks'
 
-const patterns = {
-	answer: /^(\s*>)[ \t]*\[!answer(?:\|([^\]\r\n]*))?\](?:[+-])?(?:[ \t]+[^\r\n]*)?$/i,
-	question: /^(\s*>)[ \t]*\[!question(?:\|([^\]\r\n]*))?\](?:[+-])?(?:[ \t]+[^\r\n]*)?$/i,
-}
+const questionHeader = /^(\s*>)[ \t]*\[!question(?:\|([^\]\r\n]*))?\](?:[+-])?(?:[ \t]+[^\r\n]*)?$/i
 
 const answerKind = (metadata: string | undefined): AnswerKind | undefined => {
 	switch (metadata?.toLowerCase()) {
@@ -44,7 +41,6 @@ const slotContent = (
 export const calloutSlot = (
 	node: Blockquote,
 	lines: readonly SourceLine[],
-	tag: 'answer' | 'question',
 ): AnswerSlot | undefined => {
 	if (node.position === undefined) return undefined
 	const line = node.position.start.line - 1
@@ -52,7 +48,7 @@ export const calloutSlot = (
 
 	if (header === undefined) return undefined
 
-	const match = patterns[tag].exec(header.text)
+	const match = questionHeader.exec(header.text)
 
 	if (match === null) return undefined
 	const last = lines[node.position.end.line - 1]

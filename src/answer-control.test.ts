@@ -90,7 +90,7 @@ describe('reading-view answer controls', () => {
 	})
 
 	it('saves text once and allows another Edit with the newly saved answer prefilled', async () => {
-		const note = new Note('- [ ] When?\n  > [!answer]\n  > Tomorrow\n')
+		const note = new Note('> [!question] When?\n> Tomorrow\n')
 		const element = callout()
 		const control = note.mount(element, 'When?')
 		click(element, 'Edit')
@@ -101,7 +101,7 @@ describe('reading-view answer controls', () => {
 		click(element, 'Done')
 		await Promise.resolve()
 		assert.strictEqual(note.writes, 1)
-		assert.strictEqual(note.source, '- [ ] When?\n  > [!answer]\n  > Friday\n')
+		assert.strictEqual(note.source, '> [!question] When?\n> Friday\n')
 		click(element, 'Edit')
 		assert.strictEqual(element.querySelector('textarea')?.value, 'Friday')
 		click(element, 'Cancel')
@@ -109,8 +109,8 @@ describe('reading-view answer controls', () => {
 		control.unload()
 		element.remove()
 	})
-	it('fills and edits an explicit empty note, including on completed questions', async () => {
-		const note = new Note('- [x] Revisit?\n\n  > [!answer]\n  >\n  > > [!note]\n  > >\n')
+	it('fills and edits an explicit empty note', async () => {
+		const note = new Note('> [!question] Revisit?\n>\n> > [!note]\n> >\n')
 		const element = callout()
 		const control = note.mount(element, 'Revisit?', 'note')
 		assert.strictEqual(element.classList.contains('answer-side-note'), true)
@@ -125,7 +125,7 @@ describe('reading-view answer controls', () => {
 		assert.strictEqual(note.writes, 1)
 		assert.strictEqual(
 			note.source,
-			'- [x] Revisit?\n\n  > [!answer]\n  >\n  > > [!note]\n  > > Leaning A; ask after Friday\n',
+			'> [!question] Revisit?\n>\n> > [!note]\n> > Leaning A; ask after Friday\n',
 		)
 		click(element, 'Edit note')
 		assert.strictEqual(element.querySelector('textarea')?.value, 'Leaning A; ask after Friday')

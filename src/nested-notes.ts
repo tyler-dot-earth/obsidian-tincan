@@ -56,7 +56,7 @@ const noteSlot = (node: Blockquote, lines: readonly SourceLine[]): AnswerSlot | 
 }
 
 const nestedKind = (source: string): AnswerKind | undefined => {
-	const header = /\[!(?:answer|question)(?:\|([^\]]*))?\]/i.exec(source)?.[1]?.toLowerCase()
+	const header = /\[!question(?:\|([^\]]*))?\]/i.exec(source)?.[1]?.toLowerCase()
 
 	switch (header) {
 		case undefined:

@@ -4,29 +4,40 @@ import { assert, describe, it } from '@effect/vitest'
 import { answerCallouts } from '#/src/reading-callouts'
 
 describe('supported reading surface', () => {
-	it('includes standalone question callouts alongside legacy answers while excluding nested examples', () => {
+	it('counts only standalone question callouts in rendered order', () => {
 		const root = document.createElement('div')
 		root.innerHTML =
-			'<div class="callout" data-callout="question" id="modern"><div class="callout" data-callout="question"></div></div><ul><li><div class="callout" data-callout="answer" id="legacy"></div></li></ul><blockquote><div class="callout" data-callout="question"></div></blockquote>'
+			'<div class="callout" data-callout="question" id="first"><div class="callout" data-callout="note"></div></div><div class="callout" data-callout="note"></div><div class="callout" data-callout="question" id="second"></div>'
 		assert.deepStrictEqual(
 			answerCallouts(root).map((box) => box.id),
-			['modern', 'legacy'],
-		)
-	})
-	it('excludes embedded, quoted, and nested callouts from source-order counting', () => {
-		const element = document.createElement('div')
-		element.innerHTML =
-			'<ul><li>First<div class="callout" data-callout="answer" id="first"><div class="callout" data-callout="answer" id="nested"></div></div></li><li>Second<div class="callout" data-callout="answer" id="second"></div></li></ul><div class="markdown-embed"><div class="callout" data-callout="answer"></div></div><blockquote><div class="callout" data-callout="answer"></div></blockquote><div class="callout" data-callout="note"><div class="callout" data-callout="answer"></div></div>'
-		assert.deepStrictEqual(
-			answerCallouts(element).map((callout) => callout.id),
 			['first', 'second'],
 		)
 	})
 
-	it('includes an answer callout that is itself the postprocessor root', () => {
+	it('excludes list-contained, embedded, quoted, nested and popover examples', () => {
+		const element = document.createElement('div')
+
+		for (const container of [
+			'<ul><li>CONTENT</li></ul>',
+			'<div class="markdown-embed">CONTENT</div>',
+			'<div class="internal-embed">CONTENT</div>',
+			'<blockquote>CONTENT</blockquote>',
+			'<div class="callout">CONTENT</div>',
+			'<div class="hover-popover">CONTENT</div>',
+		]) {
+			element.innerHTML = container.replace(
+				'CONTENT',
+				'<div class="callout" data-callout="question"></div>',
+			)
+
+			assert.deepStrictEqual(answerCallouts(element), [], container)
+		}
+	})
+
+	it('includes a question callout that is itself the postprocessor root', () => {
 		const element = document.createElement('div')
 		element.className = 'callout'
-		element.dataset['callout'] = 'answer'
+		element.dataset['callout'] = 'question'
 		assert.deepStrictEqual(answerCallouts(element), [element])
 	})
 })

@@ -8,15 +8,9 @@ export interface SectionSource {
 
 /** Section text is the document; section line numbers narrow it without trusting data-line. */
 export const sectionTargets = (section: SectionSource, renderedCount: number): QuestionBlock[] => {
-	const targets = questionBlocks(section.text)
-		.flatMap((block) =>
-			block.slots.flatMap((slot) =>
-				slot.line >= section.lineStart && slot.line <= section.lineEnd
-					? [{ block, line: slot.line }]
-					: [],
-			),
-		)
-		.toSorted((a, b) => a.line - b.line)
+	const targets = questionBlocks(section.text).filter(
+		(block) => block.line >= section.lineStart && block.line <= section.lineEnd,
+	)
 
-	return targets.length === renderedCount ? targets.map((entry) => entry.block) : []
+	return targets.length === renderedCount ? targets : []
 }

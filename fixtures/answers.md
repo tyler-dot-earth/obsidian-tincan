@@ -1,9 +1,6 @@
-- [ ] What should we do this weekend?
+> [!question] What should we do this weekend?
+> A picnic in the park
 
-  > [!answer]
-  > A picnic in the park
+A sentence or a few Markdown bullets is enough.
 
-- [ ] What would make tomorrow easier?
-  - context: A sentence or a few Markdown bullets is enough.
-
-  > [!answer]
+> [!question] What would make tomorrow easier?
