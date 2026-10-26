@@ -1,6 +1,6 @@
 # Tincan
 
-Obsidian plugin for answering task questions in reading view. Plugin id `tincan`. Answers and notes stay in body callouts as plain Markdown.
+Obsidian plugin for answering questions in reading view. Plugin id `tincan`. Answers and notes stay in body callouts as plain Markdown.
 
 ## Layout
 
@@ -13,10 +13,10 @@ Obsidian plugin for answering task questions in reading view. Plugin id `tincan`
 
 ## Markdown and safety
 
-- Keep one format: `[!answer]` for text, `[!answer|choice]` for one pick, `[!answer|choices]` for multiple picks, and a trailing nested `[!note]` for comments. Recommendations belong inside the answer. See `docs/format.md`.
+- Write questions as standalone callouts: `[!question] Title` for text, `[!question|choice] Title` for one pick, `[!question|choices] Title` for multiple picks, and a trailing nested `[!note]` for comments. The title is the question; recommendations belong in the answer body. See `docs/format.md`.
 - All writes use `Vault.process`, with synchronous validation of unique question text, original file identity, context, and field source. Never target by the active note or a remembered line number.
 - Refuse ambiguous targets, changed source, unavailable files, and editable copies in other panes. Keep drafts on refusal or failure.
-- Answer and note snapshots are independent. Preserve unrelated bytes, indentation, line endings, and task states. Checked questions remain editable.
+- Answer and note snapshots are independent. Preserve unrelated bytes, indentation, line endings, and task states. Saved answers remain editable.
 - Choice controls intercept activation to prevent native task toggling from writing twice.
 - Runtime code uses browser and Obsidian APIs only. Desktop and mobile share the same controls.
 

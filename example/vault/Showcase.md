@@ -1,19 +1,25 @@
 # A day out
 
-- [ ] When should we leave?
+> [!question] What time works for you?
+> Before dinner.
 
-  > [!answer|choice]
-  >
-  > - [ ] 🤖 After lunch
+> [!question|choice] When should we leave?
+>
+> - [ ] 🤖 After lunch
+> - [ ] Before dinner
 
-- [ ] Which route?
+> [!question|choice] Which route?
+>
+> - [ ] 🤖 Along the river
+> - [ ] Through the park
+>
+> Other: Past the market.
+>
+> > [!note]
+> > Check the weather before we go.
 
-  > [!answer|choice]
-  >
-  > - [ ] 🤖 Along the river
-  > - [ ] Through the park
-  >
-  > Other: A stop at the market.
-  >
-  > > [!note]
-  > > Check the weather before we go.
+> [!question|choices] What should we bring?
+>
+> - [x] Water
+> - [x] A snack
+> - [ ] A jacket

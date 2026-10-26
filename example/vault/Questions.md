@@ -1,49 +1,41 @@
 # Questions
 
-- [ ] When should we leave?
+> [!question] What time works for you?
 
-  > [!answer|choice]
-  >
-  > - [ ] 🤖 After lunch
+> [!question|choice] When should we leave?
+>
+> - [ ] 🤖 After lunch
 
-- [ ] What should we try next?
+> [!question] What should we try next?
+> A weekend workshop.
+>
+> > [!note]
+> > Ask again after checking the dates.
 
-  > [!answer]
-  > A weekend workshop.
-  >
-  > > [!note]
-  > > Ask again after checking the dates.
+> [!question|choice] Which route?
+>
+> - [x] 🤖 Along the river
+> - [ ] Through the park
 
-- [ ] Which route?
+> [!question|choices] What should we bring?
+>
+> - [x] Water
+> - [x] A snack
+> - [ ] A jacket
 
-  > [!answer|choice]
-  >
-  > - [ ] 🤖 Along the river
-  > - [ ] Through the park
+> [!question|choice] How should we meet?
+>
+> - [ ] In person
+> - [ ] Video call
+>
+> Other: A phone call.
 
-- [ ] What should we bring?
+> [!question] Which date is confirmed?
+> Saturday afternoon.
+>
+> > [!note]
+> > Recheck the room booking on Friday.
 
-  > [!answer|choices]
-  >
-  > - [x] Water
-  > - [ ] A snack
-  > - [ ] A jacket
-
-- [ ] How should we meet?
-
-  > [!answer|choice]
-  >
-  > - [ ] In person
-  > - [ ] Video call
-  >
-  > Other: A phone call.
-
-- [x] Which date is confirmed?
-
-  > [!answer]
-  > Saturday afternoon.
-  >
-  > > [!note]
-  > > Recheck the room booking on Friday.
-
-- [ ] What should we revisit next week?
+> [!question] What should we revisit next week?
+>
+> > [!note]
