@@ -97,6 +97,10 @@ bash example/setup-plugin.sh
 
 Open `example/vault` as a vault in Obsidian, enable Tincan, and open `Questions.md` in reading view. See [the example instructions](example/README.md).
 
+## Theme integration
+
+Tincan aims to fit your theme by using Obsidian’s native styling and design tokens for colors, typography, spacing, and controls. We mainly test against the default Obsidian theme and [Baseline](https://github.com/svnaxis/obsidian-baseline).
+
 ## Development
 
 ```fish
