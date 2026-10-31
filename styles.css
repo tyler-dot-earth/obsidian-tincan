@@ -147,3 +147,10 @@
 .answer-save-feedback > [role='status'] {
 	font-size: var(--font-smaller);
 }
+
+.answer-discard-preview {
+	max-height: 40vh;
+	overflow-y: auto;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}

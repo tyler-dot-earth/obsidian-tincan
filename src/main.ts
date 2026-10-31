@@ -5,6 +5,8 @@ import { MarkdownView, Notice, Plugin, type TFile } from 'obsidian'
 import { AnswerModal, DraftPicker } from '#/src/answer-modal'
 import { AnswerSection, type RenderHost } from '#/src/answer-renderer'
 import { targetFor } from '#/src/answer-target'
+import { confirmNoteSave, type DiscardConfirmation } from '#/src/confirm-discard'
+import { DiscardModal } from '#/src/discard-modal'
 import { type Draft, Drafts } from '#/src/drafts'
 import { answerCallouts } from '#/src/reading-callouts'
 import { saveAnswer } from '#/src/save-answer'
@@ -12,13 +14,14 @@ import { saveAnswer } from '#/src/save-answer'
 export default class AnswerPlugin extends Plugin {
 	private readonly drafts = new Drafts<TFile>()
 	private runtime: ManagedRuntime.ManagedRuntime<never, never> | undefined
-	private readonly modals = new Set<AnswerModal>()
+	private readonly modals = new Set<AnswerModal | DiscardModal>()
 	private readonly sections = new Set<AnswerSection>()
 
 	override onload(): void {
 		this.runtime = makePluginRuntime(Layer.empty)
 
 		const host: RenderHost = {
+			confirm: (request) => this.confirm(request),
 			inReadingView: (element, sourcePath) =>
 				this.views().some(
 					(view) =>
@@ -61,6 +64,7 @@ export default class AnswerPlugin extends Plugin {
 			draft,
 			{
 				draft: (target): Draft => this.drafts.get(file, target),
+				confirm: (request): Promise<boolean> => this.confirm(request),
 				save: (updated): Promise<boolean> => this.save(file, updated),
 			},
 			(closed) => {
@@ -84,6 +88,18 @@ export default class AnswerPlugin extends Plugin {
 		new DraftPicker(this.app, pending, ({ file, draft }) => this.openModal(file, draft)).open()
 	}
 
+	private confirm(request: DiscardConfirmation): Promise<boolean> {
+		return new Promise((resolve) => {
+			const modal = new DiscardModal(this.app, request, (accepted) => {
+				this.modals.delete(modal)
+				resolve(accepted)
+			})
+
+			this.modals.add(modal)
+			modal.open()
+		})
+	}
+
 	private async save(file: TFile, draft: Draft): Promise<boolean> {
 		const runtime = this.runtime
 
@@ -95,6 +111,10 @@ export default class AnswerPlugin extends Plugin {
 		let result = false
 
 		try {
+			if (!(await confirmNoteSave(draft, (request) => this.confirm(request)))) return false
+
+			if (this.runtime !== runtime) return false
+
 			result = await runtime.runPromise(
 				saveAnswer(
 					{
@@ -124,17 +144,17 @@ export default class AnswerPlugin extends Plugin {
 		} catch {
 			draft.saveError = 'Saving was interrupted; your draft is kept.'
 			new Notice(`${this.manifest.name}: ${draft.saveError}`)
+		} finally {
+			draft.saving = false
+			draft.saved = result
+
+			if (result) {
+				draft.editing = false
+				draft.wantsFocus = false
+			}
+
+			draft.notify()
 		}
-
-		draft.saving = false
-		draft.saved = result
-
-		if (result) {
-			draft.editing = false
-			draft.wantsFocus = false
-		}
-
-		draft.notify()
 
 		return result
 	}

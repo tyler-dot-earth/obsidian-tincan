@@ -55,7 +55,7 @@ An optional `Other:` section follows the options:
 
 A checked option or nonblank Other counts as answered. For a single pick, selecting an option clears all other options and Other. Opening the custom answer editor keeps the saved option unchanged; saving nonblank Other clears every option. For multiple picks, Other can accompany checked options.
 
-Write another answer… opens the custom answer editor or resumes a canceled draft. Saved Other text appears in an Other answer callout with Edit and Clear actions; its Markdown stays an Other: paragraph. Clear removes only the custom text. Opening or canceling the editor does not write to the note. Cancel retains the draft.
+Write another answer… opens the custom answer editor or resumes a canceled draft. Saved Other text appears in an Other answer callout with Edit and Clear actions; its Markdown stays an Other: paragraph. Clear removes only the custom text. Clearing custom text, or replacing it with a single pick, requires confirmation before any write. Opening or canceling the editor does not write to the note. Cancel retains the draft.
 
 Choices use the theme's native list layout and text appearance. Checkbox state identifies selected options; nonblank Other is the custom answer. The custom answer has no checkbox in either native Markdown or Tincan.
 
@@ -80,6 +80,8 @@ Answer and note are independent fields. A note never counts as an answer. Add a 
 >
 > > [!note]
 ```
+
+Saving an existing nonblank note as empty requires confirmation. Cancel keeps the edit open and leaves saved Markdown unchanged.
 
 Opening or canceling Add a note does not change the Markdown. Creating a note validates that no other note has appeared since the editor opened. Note creation preserves the current answer, including changes saved while the note editor was open.
 

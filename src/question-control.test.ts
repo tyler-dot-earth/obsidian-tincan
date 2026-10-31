@@ -47,6 +47,7 @@ class Note {
 		assert.ok(block !== undefined)
 
 		const actions: ControlActions = {
+			confirm: () => Promise.resolve(true),
 			draft: (target) => this.drafts.get('note.md', target),
 			save: (draft) => {
 				draft.saving = true

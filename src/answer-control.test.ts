@@ -31,6 +31,7 @@ class Note {
 	popup: Draft | undefined
 	readonly drafts = new Drafts<string>()
 	readonly actions: ControlActions = {
+		confirm: () => Promise.resolve(true),
 		draft: (target) => this.drafts.get('note.md', target),
 		save: (draft) => {
 			this.source = writeAnswer(this.source, draft.target, draft.text)

@@ -55,7 +55,7 @@ Every pick question offers Write another answer…. Open the editor, type your a
 > Other: A phone call.
 ```
 
-Saved Other text appears in an Other answer callout with Edit and Clear actions. The Markdown stays a plain Other: paragraph. Clear removes only the custom answer. If you cancel an unsaved custom draft, use Write another answer… again to resume it.
+Saved Other text appears in an Other answer callout with Edit and Clear actions. The Markdown stays a plain Other: paragraph. Clear removes only the custom answer. Clearing it or replacing it with a single pick asks for confirmation first. If you cancel an unsaved custom draft, use Write another answer… again to resume it.
 
 ## Leave a note
 
@@ -69,7 +69,7 @@ Add a trailing nested `[!note]` when you want a comment separate from the answer
 > > Ask again after checking the dates.
 ```
 
-Use Add a note beside the answer actions to open the note editor. Saving creates a trailing nested `[!note]`; opening or canceling leaves the Markdown unchanged. Existing notes keep their native callout and Edit note action. A note never counts as an answer.
+Use Add a note beside the answer actions to open the note editor. Saving creates a trailing nested `[!note]`; opening or canceling leaves the Markdown unchanged. Existing notes keep their native callout and Edit note action. A note never counts as an answer. Saving an existing note as empty asks for confirmation first.
 
 Keep callouts at the document's top level, give each one a nonempty question title, and separate them with a blank line. Use `>` on every body line, including blank lines. The body can start directly under the title or after a blank `>` line; both layouts work for text, single picks, and multiple picks. See [the format and save rules](docs/format.md) for the details.
 

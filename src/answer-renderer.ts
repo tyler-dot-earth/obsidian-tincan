@@ -9,6 +9,7 @@ import { applyAppearance, appearanceClasses } from '#/src/answer-appearance'
 import { isAnswered } from '#/src/answer-content'
 import type { ControlActions } from '#/src/answer-control'
 import type { AnswerTarget } from '#/src/answer-target'
+import type { ConfirmDiscard } from '#/src/confirm-discard'
 import type { Draft } from '#/src/drafts'
 import { canEdit, type QuestionBlock } from '#/src/question-blocks'
 import { QuestionControl } from '#/src/question-control'
@@ -18,6 +19,7 @@ import { sectionTargets } from '#/src/section-targets'
 import { whenAttached } from '#/src/when-attached'
 
 export interface RenderHost {
+	readonly confirm: ConfirmDiscard
 	readonly inReadingView: (element: HTMLElement, sourcePath: string) => boolean
 	readonly file: (sourcePath: string) => TFile | null
 	readonly draft: (file: TFile, target: AnswerTarget) => Draft
@@ -110,6 +112,7 @@ export class AnswerSection extends MarkdownRenderChild {
 	private actions(file: TFile): ControlActions {
 		return {
 			renderIcon: setIcon,
+			confirm: this.host.confirm,
 			draft: (next): Draft => this.host.draft(file, next),
 			save: (draft): Promise<boolean> => this.host.save(file, draft),
 			modal: (draft): void => this.host.modal(file, draft),

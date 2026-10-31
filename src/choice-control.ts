@@ -1,5 +1,10 @@
 import { answerContent, answerText, isAnswered, type AnswerContent } from '#/src/answer-content'
 import type { AnswerTarget } from '#/src/answer-target'
+import {
+	replaceAnswerConfirmation,
+	type ConfirmDiscard,
+	type DiscardConfirmation,
+} from '#/src/confirm-discard'
 import type { Draft } from '#/src/drafts'
 import { OtherControl } from '#/src/other-control'
 
@@ -16,6 +21,7 @@ const activationEvents = [
 ]
 
 export interface ChoiceActions {
+	readonly confirm: ConfirmDiscard
 	readonly draft: (target: AnswerTarget) => Draft
 	readonly save: (draft: Draft) => Promise<boolean>
 	readonly renderIcon?: ((element: HTMLElement, icon: string) => void) | undefined
@@ -144,6 +150,27 @@ export class ChoiceControl {
 		const content = this.content()
 
 		if (content === undefined) return
+
+		const other = content.other ?? ''
+
+		if (content.kind === 'choice' && other.trim() !== '') {
+			const option = content.options[index]
+
+			if (option === undefined) return
+			this.confirmChange(replaceAnswerConfirmation(other, option.label), () =>
+				this.applyToggle(index),
+			)
+
+			return
+		}
+
+		this.applyToggle(index)
+	}
+
+	private applyToggle(index: number): void {
+		const content = this.content()
+
+		if (content === undefined) return
 		const checked = content.options[index]?.checked !== true
 
 		const options = content.options.map((option, position) => ({
@@ -171,6 +198,28 @@ export class ChoiceControl {
 		const content = this.content()
 
 		if (content === undefined) return
+
+		if (text.trim() === '' && (content.other ?? '').trim() !== '') {
+			this.confirmChange(
+				{
+					title: 'Clear your written answer?',
+					description: 'Your written answer will be removed.',
+					action: 'Clear answer',
+					text: content.other ?? '',
+				},
+				() => this.applyOther(text),
+			)
+
+			return
+		}
+
+		this.applyOther(text)
+	}
+
+	private applyOther(text: string): void {
+		const content = this.content()
+
+		if (content === undefined) return
 		this.draft.otherText = text.replace(/\r\n|\r/g, '\n').trimEnd()
 
 		const options = content.options.map((option) => ({
@@ -180,6 +229,33 @@ export class ChoiceControl {
 
 		this.draft.text = answerText({ ...content, options, other: this.draft.otherText })
 		this.save()
+	}
+
+	private confirmChange(request: DiscardConfirmation, change: () => void): void {
+		const draft = this.draft
+		const text = draft.text
+		const otherText = draft.otherText
+		this.busy = true
+		this.refresh()
+
+		const settled = (accepted: boolean): void => {
+			this.busy = false
+
+			if (
+				this.active &&
+				this.draft === draft &&
+				draft.text === text &&
+				draft.otherText === otherText &&
+				!draft.saving &&
+				!draft.saved &&
+				accepted
+			)
+				change()
+			this.refresh()
+		}
+
+		void this.actions.confirm(request).then(settled, () => settled(false))
+		queueMicrotask(() => this.refresh())
 	}
 
 	private content(): Exclude<AnswerContent, { readonly kind: 'text' }> | undefined {

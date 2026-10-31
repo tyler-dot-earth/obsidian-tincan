@@ -4,8 +4,17 @@ import { Effect } from 'effect'
 
 import { AnswerControl, type ControlActions } from '#/src/answer-control'
 import { targetFor } from '#/src/answer-target'
+import type { ConfirmDiscard, DiscardConfirmation } from '#/src/confirm-discard'
 import { type Draft, Drafts } from '#/src/drafts'
 import { type AnswerWriter, saveAnswer } from '#/src/save-answer'
+
+const clear = (element: HTMLElement): void => {
+	element.querySelector<HTMLButtonElement>('.answer-other-clear')?.click()
+}
+
+const replace = (element: HTMLElement): void => {
+	input(element, 0).click()
+}
 
 const sourceFor = (kind: string): string =>
 	`Before\n\n> [!question|${kind}] Which?\n> - [ ] River\n> - [ ] Park\n\nAfter\n`
@@ -28,6 +37,8 @@ class Note implements AnswerWriter {
 	finish: (() => void) | undefined
 	error = ''
 	lastSave = Promise.resolve(false)
+	readonly confirmations: DiscardConfirmation[] = []
+	confirm: ConfirmDiscard = () => Promise.resolve(true)
 	readonly drafts = new Drafts<string>()
 	available = (): boolean => this.exists
 	editing = (): boolean => this.inEditor
@@ -52,6 +63,11 @@ class Note implements AnswerWriter {
 	}
 
 	readonly actions: ControlActions = {
+		confirm: (request) => {
+			this.confirmations.push(request)
+
+			return this.confirm(request)
+		},
 		draft: (target) => this.drafts.get('note.md', target),
 		save: (draft) => {
 			draft.saving = true
@@ -183,6 +199,7 @@ describe('direct reading-view picks', () => {
 			assert.ok(restored !== null)
 			assert.strictEqual(restored.classList.contains('answer-has-selection'), true)
 			redrawn.element.querySelector<HTMLButtonElement>('.answer-other-clear')?.click()
+			await Promise.resolve()
 			await note.lastSave
 			assert.strictEqual(restored.classList.contains('answer-has-selection'), false)
 			assert.deepStrictEqual(picks(redrawn.element), [false, false])
@@ -441,6 +458,7 @@ describe('direct reading-view picks', () => {
 		assert.strictEqual(other.hidden, true)
 
 		input(mounted.element, 0).click()
+		await Promise.resolve()
 		await note.lastSave
 		assert.strictEqual(note.writes, 1)
 		assert.deepStrictEqual(picks(mounted.element), [true, false])
@@ -647,6 +665,7 @@ describe('direct reading-view picks', () => {
 		assert.strictEqual(write.hidden, true)
 		assert.match(note.source, /Other: A better answer/)
 		mounted.element.querySelector<HTMLButtonElement>('.answer-other-clear')?.click()
+		await Promise.resolve()
 		await note.lastSave
 		assert.strictEqual(note.writes, 2)
 		assert.strictEqual(write.hidden, false)
@@ -714,6 +733,7 @@ describe('direct reading-view picks', () => {
 		const mounted = note.mount()
 		note.fail = true
 		mounted.element.querySelector<HTMLButtonElement>('.answer-other-clear')?.click()
+		await Promise.resolve()
 		await note.lastSave
 		assert.strictEqual(note.writes, 0)
 		assert.strictEqual(note.source, source)
@@ -770,5 +790,127 @@ describe('direct reading-view picks', () => {
 		assert.strictEqual(mounted.element.querySelector('[role="group"]'), null)
 		assert.strictEqual(mounted.element.querySelector('p')?.textContent, 'Original Markdown')
 		mounted.element.remove()
+	})
+})
+
+describe('discard confirmation', () => {
+	const source = sourceFor('choice').replace(
+		'> - [ ] Park\n',
+		'> - [ ] Park\n>\n> Other: A written route\n',
+	)
+
+	it.each([
+		['clear', clear],
+		['replace', replace],
+	] as const)(
+		'cancels %s without changing saved prose, picks, or draft',
+		async (_name, activate) => {
+			const note = new Note(source)
+			let respond: ((accepted: boolean) => void) | undefined
+
+			note.confirm = () =>
+				new Promise((resolve) => {
+					respond = resolve
+				})
+			const mounted = note.mount()
+			const text = mounted.draft.text
+			activate(mounted.element)
+			assert.strictEqual(note.confirmations.length, 1)
+			assert.strictEqual(note.confirmations[0]?.text, 'A written route')
+			assert.strictEqual(note.processes, 0)
+			input(mounted.element, 1).click()
+			assert.strictEqual(note.confirmations.length, 1)
+			assert.ok(respond !== undefined)
+			respond(false)
+			await Promise.resolve()
+			assert.strictEqual(note.source, source)
+			assert.strictEqual(note.writes, 0)
+			assert.strictEqual(mounted.draft.text, text)
+			assert.strictEqual(mounted.draft.otherText, 'A written route')
+			assert.deepStrictEqual(picks(mounted.element), [false, false])
+			assert.strictEqual(input(mounted.element, 0).disabled, false)
+			assert.strictEqual(note.drafts.pending().length, 0)
+			close(mounted)
+		},
+	)
+
+	it.each([
+		['clear', clear],
+		['replace', replace],
+	] as const)('confirms %s with exactly one validated write', async (_name, activate) => {
+		const note = new Note(source)
+		const mounted = note.mount()
+		activate(mounted.element)
+		await Promise.resolve()
+		await note.lastSave
+		assert.strictEqual(note.confirmations.length, 1)
+		assert.strictEqual(note.writes, 1)
+		assert.ok(!note.source.includes('Other:'))
+		close(mounted)
+	})
+
+	it('does not apply an accepted confirmation after its control unloads', async () => {
+		const note = new Note(source)
+		let respond: ((accepted: boolean) => void) | undefined
+
+		note.confirm = () =>
+			new Promise((resolve) => {
+				respond = resolve
+			})
+		const mounted = note.mount()
+		replace(mounted.element)
+		close(mounted)
+		assert.ok(respond !== undefined)
+		respond(true)
+		await Promise.resolve()
+		assert.strictEqual(note.processes, 0)
+		assert.strictEqual(note.source, source)
+	})
+
+	it('still refuses a changed source after the user confirms', async () => {
+		const note = new Note(source)
+		note.confirm = () => {
+			note.source = source.replace('A written route', 'A newer answer')
+
+			return Promise.resolve(true)
+		}
+
+		const mounted = note.mount()
+		replace(mounted.element)
+		await Promise.resolve()
+		await note.lastSave
+		assert.strictEqual(note.writes, 0)
+		assert.match(note.source, /Other: A newer answer/)
+		assert.ok(note.error.length > 0)
+		close(mounted)
+	})
+
+	it('also confirms removing custom prose through an empty editor save', async () => {
+		const note = new Note(source)
+		note.confirm = () => Promise.resolve(false)
+		const mounted = note.mount()
+		mounted.element.querySelector<HTMLButtonElement>('.answer-other-edit')?.click()
+		const textarea = mounted.element.querySelector('textarea')
+		assert.ok(textarea !== null)
+		textarea.value = ''
+		textarea.dispatchEvent(new Event('input', { bubbles: true }))
+		mounted.element.querySelector<HTMLButtonElement>('.answer-other-save')?.click()
+		await Promise.resolve()
+		assert.strictEqual(note.confirmations.length, 1)
+		assert.strictEqual(note.processes, 0)
+		assert.strictEqual(note.source, source)
+		assert.strictEqual(mounted.draft.otherEditing, true)
+		close(mounted)
+	})
+
+	it('keeps custom prose during a multiple pick without confirmation', async () => {
+		const note = new Note(source.replace('|choice]', '|choices]'))
+		const mounted = note.mount()
+		input(mounted.element, 0).click()
+		await note.lastSave
+		assert.strictEqual(note.confirmations.length, 0)
+		assert.match(note.source, /Other: A written route/)
+		assert.match(note.source, /\[x\] River/)
+		close(mounted)
 	})
 })
