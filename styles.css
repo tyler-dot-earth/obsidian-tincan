@@ -29,6 +29,22 @@
 	flex-shrink: 0;
 }
 
+.answer-native > .callout-title > .answer-status {
+	align-self: baseline;
+	margin-inline-start: auto;
+}
+
+.answer-native .answer-option > input {
+	position: absolute;
+	margin: 0;
+	font: inherit;
+}
+
+.answer-native .task-list-item.is-checked {
+	color: var(--text-normal);
+	text-decoration: none;
+}
+
 .answer-editor,
 .answer-other-editor {
 	display: flex;

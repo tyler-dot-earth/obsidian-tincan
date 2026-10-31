@@ -113,6 +113,7 @@ pnpm build
 - If a pick cannot save, its draft stays visible with the refusal reason and Retry.
 - Saves check the current question and answer before writing. Duplicate questions, concurrent changes, and editable copies in other panes refuse the save and keep the draft.
 - Cancel keeps a draft in memory. Resume draft opens it again; restarting Obsidian or disabling Tincan loses unsaved drafts.
+- Rendered questions in Live Preview share the reading view’s answered colors, icons, pick hints, option-note spacing, and custom-answer callouts. Native checkboxes and source editing remain owned by Obsidian.
 - Controls work in reading-view note panes. Code examples, embeds, and unsupported question structures stay ordinary Markdown.
 
 See [the format and save rules](docs/format.md) for the details.

@@ -1,6 +1,34 @@
 import { answerContent } from '#/src/answer-content'
 import type { Draft } from '#/src/drafts'
 
+interface OtherCallout {
+	readonly callout: HTMLElement
+	readonly body: HTMLElement
+}
+
+export const otherCallout = (
+	document: Document,
+	renderIcon: OtherActions['renderIcon'],
+): OtherCallout => {
+	const callout = document.createElement('div')
+	callout.className = 'callout answer-other-callout'
+	callout.setAttribute('data-callout', 'quote')
+	const title = document.createElement('div')
+	title.className = 'callout-title'
+	const icon = document.createElement('div')
+	icon.className = 'callout-icon'
+	renderIcon?.(icon, 'quote')
+	const heading = document.createElement('div')
+	heading.className = 'callout-title-inner'
+	heading.textContent = 'Other answer'
+	title.append(icon, heading)
+	const body = document.createElement('div')
+	body.className = 'callout-content'
+	callout.append(title, body)
+
+	return { callout, body }
+}
+
 export interface OtherActions {
 	readonly draft: () => Draft
 	readonly save: (text: string) => void
@@ -61,22 +89,8 @@ export class OtherControl {
 	}
 
 	private createCallout(document: Document): HTMLElement {
-		const callout = document.createElement('div')
-		callout.className = 'callout answer-other-callout'
-		callout.setAttribute('data-callout', 'quote')
-		const title = document.createElement('div')
-		title.className = 'callout-title'
-		const icon = document.createElement('div')
-		icon.className = 'callout-icon'
-		this.actions.renderIcon?.(icon, 'quote')
-		const heading = document.createElement('div')
-		heading.className = 'callout-title-inner'
-		heading.textContent = 'Other answer'
-		title.append(icon, heading)
-		const body = document.createElement('div')
-		body.className = 'callout-content'
+		const { callout, body } = otherCallout(document, this.actions.renderIcon)
 		body.append(this.value, this.savedActions, this.editor)
-		callout.append(title, body)
 
 		return callout
 	}

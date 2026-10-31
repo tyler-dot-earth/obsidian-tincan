@@ -5,8 +5,7 @@ import {
 	type TFile,
 } from 'obsidian'
 
-import { applyAppearance, appearanceClasses } from '#/src/answer-appearance'
-import { isAnswered } from '#/src/answer-content'
+import { QuestionAppearance } from '#/src/answer-appearance'
 import type { ControlActions } from '#/src/answer-control'
 import type { AnswerTarget } from '#/src/answer-target'
 import type { ConfirmDiscard } from '#/src/confirm-discard'
@@ -33,19 +32,11 @@ const eligibleQuestion = (block: QuestionBlock | undefined): block is QuestionBl
 
 class RenderedQuestion extends MarkdownRenderChild {
 	private readonly control: QuestionControl
-	private readonly status: HTMLElement
-	private readonly icon: HTMLElement | null
-	private readonly originalIcon: Node[]
+	private readonly appearance: QuestionAppearance
 
 	constructor(element: HTMLElement, block: QuestionBlock, actions: ControlActions) {
 		super(element)
-		this.icon = element.querySelector<HTMLElement>(':scope > .callout-title > .callout-icon')
-		this.originalIcon = Array.from(this.icon?.childNodes ?? [])
-		this.status = element.ownerDocument.createElement('span')
-		this.status.className = 'answer-status'
-		this.status.textContent = 'Answered'
-		this.status.hidden = true
-		element.querySelector(':scope > .callout-title')?.append(this.status)
+		this.appearance = new QuestionAppearance(element, actions.renderIcon)
 		this.control = new QuestionControl(element, block, {
 			...actions,
 			state: (target): void => this.paint(target),
@@ -53,15 +44,7 @@ class RenderedQuestion extends MarkdownRenderChild {
 	}
 
 	private paint(target: AnswerTarget): void {
-		applyAppearance(this.containerEl, 'answer', target.answer?.content)
-		const content = target.answer?.content
-		const answered = content !== undefined && isAnswered(content)
-		this.status.hidden = !answered
-
-		if (this.icon === null) return
-
-		if (answered) setIcon(this.icon, 'circle-check')
-		else this.icon.replaceChildren(...this.originalIcon)
+		this.appearance.paint(target.answer?.content)
 	}
 
 	override onload(): void {
@@ -69,9 +52,7 @@ class RenderedQuestion extends MarkdownRenderChild {
 	}
 	override onunload(): void {
 		this.control.unload()
-		this.containerEl.classList.remove(...appearanceClasses)
-		this.status.remove()
-		this.icon?.replaceChildren(...this.originalIcon)
+		this.appearance.unload()
 	}
 }
 

@@ -1,6 +1,6 @@
 import { disposePluginRuntime, makePluginRuntime } from '@tyler.earth/effect-obsidian'
 import { Effect, Layer, type ManagedRuntime } from 'effect'
-import { MarkdownView, Notice, Plugin, type TFile } from 'obsidian'
+import { MarkdownView, Notice, Plugin, setIcon, type TFile } from 'obsidian'
 
 import { AnswerModal, DraftPicker } from '#/src/answer-modal'
 import { AnswerSection, type RenderHost } from '#/src/answer-renderer'
@@ -8,6 +8,7 @@ import { targetFor } from '#/src/answer-target'
 import { confirmNoteSave, type DiscardConfirmation } from '#/src/confirm-discard'
 import { DiscardModal } from '#/src/discard-modal'
 import { type Draft, Drafts } from '#/src/drafts'
+import { EditorAppearance } from '#/src/editor-appearance'
 import { answerCallouts } from '#/src/reading-callouts'
 import { saveAnswer } from '#/src/save-answer'
 
@@ -16,9 +17,17 @@ export default class AnswerPlugin extends Plugin {
 	private runtime: ManagedRuntime.ManagedRuntime<never, never> | undefined
 	private readonly modals = new Set<AnswerModal | DiscardModal>()
 	private readonly sections = new Set<AnswerSection>()
+	private readonly editorAppearances = new Map<MarkdownView, EditorAppearance>()
 
 	override onload(): void {
 		this.runtime = makePluginRuntime(Layer.empty)
+		this.app.workspace.onLayoutReady(() => this.syncEditorAppearances())
+		this.registerEvent(this.app.workspace.on('layout-change', () => this.syncEditorAppearances()))
+		this.registerEvent(
+			this.app.workspace.on('active-leaf-change', () => this.syncEditorAppearances()),
+		)
+		this.registerEvent(this.app.workspace.on('file-open', () => this.syncEditorAppearances()))
+		this.registerEvent(this.app.workspace.on('editor-change', () => this.syncEditorAppearances()))
 
 		const host: RenderHost = {
 			confirm: (request) => this.confirm(request),
@@ -56,6 +65,32 @@ export default class AnswerPlugin extends Plugin {
 		return this.app.workspace
 			.getLeavesOfType('markdown')
 			.flatMap((leaf) => (leaf.view instanceof MarkdownView ? [leaf.view] : []))
+	}
+
+	private syncEditorAppearances(): void {
+		if (this.runtime === undefined) return
+		const views = new Set(this.views())
+
+		for (const [view, appearance] of this.editorAppearances) {
+			if (views.has(view)) continue
+			appearance.unload()
+			this.editorAppearances.delete(view)
+		}
+
+		for (const view of views) {
+			let appearance = this.editorAppearances.get(view)
+
+			if (appearance === undefined) {
+				appearance = new EditorAppearance(
+					view.containerEl,
+					() => (view.getMode() === 'source' ? view.editor.getValue() : undefined),
+					setIcon,
+				)
+				this.editorAppearances.set(view, appearance)
+			}
+
+			appearance.schedule()
+		}
 	}
 
 	private openModal(file: TFile, draft: Draft): void {
@@ -160,6 +195,9 @@ export default class AnswerPlugin extends Plugin {
 	}
 
 	override onunload(): void {
+		for (const appearance of this.editorAppearances.values()) appearance.unload()
+		this.editorAppearances.clear()
+
 		for (const section of this.sections) section.unload()
 		this.sections.clear()
 
