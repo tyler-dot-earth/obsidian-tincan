@@ -4,7 +4,7 @@ Answer questions inside Obsidian callouts in reading view. Put the question in t
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/tincan-dark.png">
-  <img src="docs/images/tincan.png" alt="Tincan in Obsidian reading view: answered and unanswered questions, pick instructions, custom answers, and a nested note." width="700">
+  <img src="docs/images/tincan.png" alt="Tincan in Obsidian reading view: answered and unanswered questions, pick instructions, custom answers, and notes on individual options and the whole question." width="700">
 </picture>
 
 Write a question callout and switch to reading view. Unanswered questions keep your theme’s question appearance; saved answers use its success color and a check icon. The icon tracks the answer, with no separate task-completion checkbox.

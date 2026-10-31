@@ -22,6 +22,9 @@ The setup script copies only `main.js`, `manifest.json`, and `styles.css`. Run i
 - Tick the 🤖 suggestion or use Write another answer… to open the custom answer editor. Saved custom text appears in an Other answer callout with Edit and Clear actions. Opening or canceling the editor keeps saved picks unchanged.
 - Switch a single pick, select several multiple picks, and save Other. Single picks clear competing answers; multiple picks can accompany Other.
 - Notice saved answers use the theme’s success color and a check icon. Pick instructions stay above the choices; checkboxes align with the first line of wrapped text. Clearing the last saved answer restores the question appearance.
+- Add a note to an unchecked option and verify it stays unchecked. Change the selected answer and verify the option note remains beneath its original option.
+- Clear a custom answer or replace it with a single pick, and cancel the confirmation to keep it. Saving an existing note as empty also asks first.
+- Compare rendered callouts in Live Preview and reading view: answered colors, icons, pick hints, nested-note spacing, and custom-answer cards share their appearance. Every copy of a note must be in reading view before Tincan can save.
 - Edit a note without changing the answer. Use Add a note beside the answer actions to create a nested note on save. The last question also has an empty note to try Add note; filled notes have Edit note.
 
-`Showcase.md` is the compact “A day out” example for screenshots. It includes text, a suggestion, single and multiple picks, saved Other, and one explicit note. Both notes remain readable Markdown without the plugin.
+`Showcase.md` is the compact “A day out” example for screenshots. It includes text, a suggestion, single and multiple picks, a wrapped option, saved Other, a note on an unchecked option, and a question-level note. Answers and notes remain readable Markdown without the plugin.
