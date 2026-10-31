@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-tincan",
-	"version": "0.3.1",
+	"version": "0.4.0",
 	"private": true,
 	"description": "Answer questions in Obsidian reading view",
 	"license": "0BSD",
