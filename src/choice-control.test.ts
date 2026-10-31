@@ -55,6 +55,7 @@ class Note implements AnswerWriter {
 		draft: (target) => this.drafts.get('note.md', target),
 		save: (draft) => {
 			draft.saving = true
+			draft.saveError = undefined
 			draft.notify()
 			this.lastSave = Effect.runPromise(
 				saveAnswer(this, draft.target, draft.text).pipe(
@@ -66,6 +67,7 @@ class Note implements AnswerWriter {
 						},
 						onFailure: (error) => {
 							this.error = error.message
+							draft.saveError = error.message
 
 							return false
 						},
@@ -126,7 +128,7 @@ describe('direct reading-view picks', () => {
 		async (kind) => {
 			const note = new Note(sourceFor(kind))
 			const mounted = note.mount()
-			const fieldset = mounted.element.querySelector('fieldset')
+			const fieldset = mounted.element.querySelector('[role="group"]')
 			assert.ok(fieldset !== null)
 			assert.strictEqual(fieldset.classList.contains('answer-has-selection'), false)
 			assert.strictEqual(note.writes, 0)
@@ -159,9 +161,9 @@ describe('direct reading-view picks', () => {
 		async (kind) => {
 			const note = new Note(sourceFor(kind))
 			const mounted = note.mount()
-			const fieldset = mounted.element.querySelector('fieldset')
+			const fieldset = mounted.element.querySelector('[role="group"]')
 			assert.ok(fieldset !== null)
-			mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+			mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')?.click()
 			const textarea = mounted.element.querySelector('textarea')
 			assert.ok(textarea !== null)
 			textarea.value = 'By bus'
@@ -172,15 +174,15 @@ describe('direct reading-view picks', () => {
 			assert.strictEqual(fieldset.classList.contains('answer-has-selection'), true)
 			assert.deepStrictEqual(picks(mounted.element), [false, false])
 			assert.strictEqual(
-				mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.checked,
-				true,
+				mounted.element.querySelector<HTMLElement>('.answer-other-value')?.hidden,
+				false,
 			)
 			close(mounted)
 			const redrawn = note.mount()
-			const restored = redrawn.element.querySelector('fieldset')
+			const restored = redrawn.element.querySelector('[role="group"]')
 			assert.ok(restored !== null)
 			assert.strictEqual(restored.classList.contains('answer-has-selection'), true)
-			redrawn.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+			redrawn.element.querySelector<HTMLButtonElement>('.answer-other-clear')?.click()
 			await note.lastSave
 			assert.strictEqual(restored.classList.contains('answer-has-selection'), false)
 			assert.deepStrictEqual(picks(redrawn.element), [false, false])
@@ -198,8 +200,10 @@ describe('direct reading-view picks', () => {
 			assert.strictEqual(input(mounted.element, 0).disabled, false)
 			assert.strictEqual(input(mounted.element, 0).type, 'checkbox')
 			assert.ok(
-				!Array.from(mounted.element.querySelectorAll('button')).some((button) =>
-					['Answer…', 'Edit', 'Done'].includes(button.textContent ?? ''),
+				!Array.from(mounted.element.querySelectorAll('button')).some(
+					(button) =>
+						!button.hasAttribute('hidden') &&
+						['Answer…', 'Edit', 'Done'].includes(button.textContent ?? ''),
 				),
 			)
 			mounted.element.querySelector('label')?.click()
@@ -386,12 +390,15 @@ describe('direct reading-view picks', () => {
 	it('labels multiple picks, styles recommendations and saves editable Other alongside a pick', async () => {
 		const note = new Note(sourceFor('choices').replace('River', '🤖 River'))
 		const mounted = note.mount()
-		assert.strictEqual(mounted.element.querySelector('legend')?.textContent, 'pick 1+')
+		assert.strictEqual(
+			mounted.element.querySelector('[role="group"]')?.getAttribute('aria-label'),
+			'pick 1+',
+		)
 		assert.strictEqual(
 			mounted.element.querySelector('.answer-recommended span')?.textContent,
 			'🤖 River',
 		)
-		mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+		mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')?.click()
 		const textarea = mounted.element.querySelector('textarea')
 		assert.ok(textarea !== null)
 		textarea.value = 'A picnic in the park'
@@ -429,62 +436,69 @@ describe('direct reading-view picks', () => {
 
 		const note = new Note(original)
 		const mounted = note.mount()
-		const other = mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')
-		assert.ok(other !== null && other.checked)
+		const other = mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')
+		assert.ok(other !== null)
+		assert.strictEqual(other.hidden, true)
 
 		input(mounted.element, 0).click()
 		await note.lastSave
 		assert.strictEqual(note.writes, 1)
 		assert.deepStrictEqual(picks(mounted.element), [true, false])
-		assert.strictEqual(other.checked, false)
+		assert.strictEqual(other.hidden, false)
 		assert.ok(!note.source.includes('Other:'))
 		assert.match(note.source, /Ask Friday/)
 		assert.strictEqual(note.drafts.pending().length, 0)
 
-		mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+		mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')?.click()
 		await note.lastSave
-		assert.strictEqual(note.writes, 2)
-		assert.deepStrictEqual(picks(mounted.element), [false, false])
+		assert.strictEqual(note.writes, 1)
+		assert.deepStrictEqual(picks(mounted.element), [true, false])
 		const textarea = mounted.element.querySelector('textarea')
 		assert.ok(textarea !== null)
 		assert.strictEqual(textarea.value, '')
 		textarea.value = 'Go by bus'
 		textarea.dispatchEvent(new Event('input', { bubbles: true }))
-		assert.strictEqual(note.writes, 2)
-		assert.deepStrictEqual(picks(mounted.element), [false, false])
+		assert.strictEqual(note.writes, 1)
+		assert.deepStrictEqual(picks(mounted.element), [true, false])
 		mounted.element.querySelector<HTMLButtonElement>('.answer-other-save')?.click()
 		await note.lastSave
-		assert.strictEqual(note.writes, 3)
+		assert.strictEqual(note.writes, 2)
 		assert.deepStrictEqual(picks(mounted.element), [false, false])
-		assert.strictEqual(other.checked, true)
+		assert.strictEqual(other.hidden, true)
 		assert.strictEqual(note.source, original.replace('A picnic', 'Go by bus'))
 		close(mounted)
 		const redrawn = note.mount()
 		assert.deepStrictEqual(picks(redrawn.element), [false, false])
 		assert.strictEqual(
-			redrawn.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.checked,
-			true,
+			redrawn.element.querySelector<HTMLElement>('.answer-other-value')?.hidden,
+			false,
 		)
 		close(redrawn)
 	})
 
 	it.each(['choice', 'choices'])(
-		'ticking empty Other immediately clears a single pick but preserves multiple picks: %s',
+		'opening and canceling the custom editor keeps saved picks; saving respects %s selection rules',
 		async (kind) => {
 			const source = sourceFor(kind).replace('[ ] River', '[x] River')
 			const note = new Note(source)
 			const mounted = note.mount()
-			const other = mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')
+			const other = mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')
 			assert.ok(other !== null)
 			other.click()
 			await note.lastSave
-			assert.strictEqual(note.writes, kind === 'choice' ? 1 : 0)
-			assert.strictEqual(note.source, kind === 'choice' ? sourceFor(kind) : source)
-			assert.deepStrictEqual(picks(mounted.element), [kind === 'choices', false])
+			assert.strictEqual(note.writes, 0)
+			assert.strictEqual(note.source, source)
+			assert.deepStrictEqual(picks(mounted.element), [true, false])
 			assert.strictEqual(
 				mounted.element.querySelector<HTMLElement>('.answer-other-editor')?.hidden,
 				false,
 			)
+			mounted.element.querySelector<HTMLButtonElement>('.answer-other-cancel')?.click()
+			assert.strictEqual(note.writes, 0)
+			assert.strictEqual(note.source, source)
+			assert.deepStrictEqual(picks(mounted.element), [true, false])
+			other.click()
+
 			const textarea = mounted.element.querySelector('textarea')
 			assert.ok(textarea !== null)
 			assert.strictEqual(textarea.value, '')
@@ -492,18 +506,18 @@ describe('direct reading-view picks', () => {
 			textarea.dispatchEvent(new Event('input', { bubbles: true }))
 			mounted.element.querySelector<HTMLButtonElement>('.answer-other-save')?.click()
 			await note.lastSave
-			assert.strictEqual(note.writes, kind === 'choice' ? 2 : 1)
+			assert.strictEqual(note.writes, 1)
 			assert.deepStrictEqual(picks(mounted.element), [kind === 'choices', false])
-			assert.strictEqual(other.checked, true)
+			assert.strictEqual(other.hidden, true)
 			assert.match(note.source, /Other: Custom route/)
 			close(mounted)
 		},
 	)
 
-	it('keeps an unsaved Other draft when ticking its checkbox clears a single pick', async () => {
+	it('resumes an unsaved custom draft without clearing the saved single pick', async () => {
 		const note = new Note(sourceFor('choice'))
 		const mounted = note.mount()
-		mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+		mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')?.click()
 		const textarea = mounted.element.querySelector('textarea')
 		assert.ok(textarea !== null)
 		textarea.value = 'Resume this route'
@@ -513,10 +527,10 @@ describe('direct reading-view picks', () => {
 		await note.lastSave
 		assert.strictEqual(note.writes, 1)
 		assert.deepStrictEqual(picks(mounted.element), [true, false])
-		mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+		mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')?.click()
 		await note.lastSave
-		assert.strictEqual(note.writes, 2)
-		assert.strictEqual(note.source, sourceFor('choice'))
+		assert.strictEqual(note.writes, 1)
+		assert.strictEqual(note.source, sourceFor('choice').replace('[ ] River', '[x] River'))
 		assert.strictEqual(textarea.value, 'Resume this route')
 		assert.strictEqual(
 			mounted.element.querySelector<HTMLElement>('.answer-other-editor')?.hidden,
@@ -530,7 +544,7 @@ describe('direct reading-view picks', () => {
 		const note = new Note(source)
 		const mounted = note.mount()
 		note.fail = true
-		mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+		mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')?.click()
 		await note.lastSave
 		const textarea = mounted.element.querySelector('textarea')
 		assert.ok(textarea !== null)
@@ -556,8 +570,11 @@ describe('direct reading-view picks', () => {
 	it('restores unsaved Other across redraws and refuses changes beneath its original snapshot', async () => {
 		const note = new Note(sourceFor('choices'))
 		const mounted = note.mount()
-		assert.strictEqual(mounted.element.querySelector('legend')?.textContent, 'pick 1+')
-		mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+		assert.strictEqual(
+			mounted.element.querySelector('[role="group"]')?.getAttribute('aria-label'),
+			'pick 1+',
+		)
+		mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')?.click()
 		const textarea = mounted.element.querySelector('textarea')
 		assert.ok(textarea !== null)
 		textarea.value = 'Custom answer'
@@ -581,7 +598,7 @@ describe('direct reading-view picks', () => {
 		const note = new Note(sourceFor('choice'))
 		note.defer = true
 		const mounted = note.mount()
-		mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+		mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')?.click()
 		const textarea = mounted.element.querySelector('textarea')
 		assert.ok(textarea !== null)
 		textarea.value = 'Keep this unsaved custom text'
@@ -603,16 +620,16 @@ describe('direct reading-view picks', () => {
 		close(mounted)
 	})
 
-	it('collapses a saved Other answer, checks its row, and clears it in one safe click', async () => {
+	it('shows saved custom text as a paragraph, edits it, and clears it in one safe click', async () => {
 		const note = new Note(
 			sourceFor('choice').replace('> - [ ] Park\n', '> - [ ] Park\n>\n> Other: My own answer\n'),
 		)
 
 		const mounted = note.mount()
-		const checkbox = mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')
+		const write = mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')
 		const editor = mounted.element.querySelector<HTMLElement>('.answer-other-editor')
-		assert.ok(checkbox !== null && editor !== null)
-		assert.strictEqual(checkbox.checked, true)
+		assert.ok(write !== null && editor !== null)
+		assert.strictEqual(write.hidden, true)
 		assert.strictEqual(editor.hidden, true)
 		const edit = mounted.element.querySelector<HTMLButtonElement>('.answer-other-edit')
 		assert.ok(edit !== null)
@@ -627,26 +644,32 @@ describe('direct reading-view picks', () => {
 		mounted.element.querySelector<HTMLButtonElement>('.answer-other-save')?.click()
 		await note.lastSave
 		assert.strictEqual(editor.hidden, true)
-		assert.strictEqual(checkbox.checked, true)
+		assert.strictEqual(write.hidden, true)
 		assert.match(note.source, /Other: A better answer/)
-		checkbox.click()
+		mounted.element.querySelector<HTMLButtonElement>('.answer-other-clear')?.click()
 		await note.lastSave
 		assert.strictEqual(note.writes, 2)
-		assert.strictEqual(checkbox.checked, false)
+		assert.strictEqual(write.hidden, false)
 		assert.ok(!note.source.includes('Other:'))
-		assert.strictEqual(mounted.element.querySelector('.answer-other-row button'), null)
+		assert.strictEqual(
+			mounted.element.querySelector('.answer-other-value')?.hasAttribute('hidden'),
+			true,
+		)
 		assert.strictEqual(mounted.element.classList.contains('answer-unanswered'), true)
 		close(mounted)
 	})
 
 	it.each(['choice', 'choices'])(
-		'opens and resumes unanswered %s Other through its checkbox without a button',
+		'opens and resumes an unanswered %s custom draft through its button',
 		(kind) => {
 			const note = new Note(sourceFor(kind))
 			const mounted = note.mount()
-			assert.strictEqual(mounted.element.querySelector('.answer-other-row button'), null)
+			assert.strictEqual(
+				mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')?.hidden,
+				false,
+			)
 			assert.ok(!mounted.element.textContent?.includes('Other…'))
-			mounted.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+			mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')?.click()
 			const editor = mounted.element.querySelector<HTMLElement>('.answer-other-editor')
 			assert.strictEqual(editor?.hidden, false)
 			const textarea = mounted.element.querySelector('textarea')
@@ -658,11 +681,17 @@ describe('direct reading-view picks', () => {
 			assert.strictEqual(note.writes, 0)
 			assert.strictEqual(note.source, sourceFor(kind))
 			assert.strictEqual(note.drafts.pending().length, 1)
-			assert.strictEqual(mounted.element.querySelector('.answer-other-row button'), null)
+			assert.strictEqual(
+				mounted.element.querySelector<HTMLButtonElement>('.answer-other-write')?.hidden,
+				false,
+			)
 			close(mounted)
 			const redrawn = note.mount()
-			assert.strictEqual(redrawn.element.querySelector('.answer-other-row button'), null)
-			redrawn.element.querySelector<HTMLInputElement>('.answer-other-toggle')?.click()
+			assert.strictEqual(
+				redrawn.element.querySelector<HTMLButtonElement>('.answer-other-write')?.hidden,
+				false,
+			)
+			redrawn.element.querySelector<HTMLButtonElement>('.answer-other-write')?.click()
 			assert.strictEqual(redrawn.element.querySelector('textarea')?.value, 'Remember this draft')
 			assert.strictEqual(
 				redrawn.element.querySelector<HTMLElement>('.answer-other-editor')?.hidden,
@@ -673,6 +702,62 @@ describe('direct reading-view picks', () => {
 		},
 	)
 
+	it('retries a refused Clear without changing checked picks or the nested note', async () => {
+		const source = sourceFor('choices')
+			.replace('[ ] River', '[x] River')
+			.replace(
+				'> - [ ] Park\n',
+				'> - [ ] Park\n>\n> Other: Custom route\n>\n> > [!note]\n> > Ask Friday\n',
+			)
+
+		const note = new Note(source)
+		const mounted = note.mount()
+		note.fail = true
+		mounted.element.querySelector<HTMLButtonElement>('.answer-other-clear')?.click()
+		await note.lastSave
+		assert.strictEqual(note.writes, 0)
+		assert.strictEqual(note.source, source)
+		assert.ok(note.error.length > 0)
+		note.fail = false
+		Array.from(mounted.element.querySelectorAll('button'))
+			.find((button) => button.textContent === 'Retry')
+			?.click()
+		await note.lastSave
+		assert.strictEqual(note.writes, 1)
+		assert.deepStrictEqual(picks(mounted.element), [true, false])
+		assert.ok(!note.source.includes('Other:'))
+		assert.ok(note.source.includes('> > [!note]\n> > Ask Friday\n'))
+		close(mounted)
+	})
+
+	it('explains an editing-pane refusal inline and saves the kept pick after that pane closes', async () => {
+		const source = sourceFor('choice')
+		const note = new Note(source)
+		note.inEditor = true
+		const mounted = note.mount()
+		input(mounted.element, 1).click()
+		await note.lastSave
+		assert.strictEqual(note.writes, 0)
+		assert.strictEqual(note.source, source)
+		assert.deepStrictEqual(picks(mounted.element), [false, true])
+		assert.match(
+			mounted.element.querySelector('[role=status]')?.textContent ?? '',
+			/Switch every copy of this note to reading view/,
+		)
+		note.inEditor = false
+		Array.from(mounted.element.querySelectorAll('button'))
+			.find((button) => button.textContent === 'Retry')
+			?.click()
+		await note.lastSave
+		assert.strictEqual(note.writes, 1)
+		assert.strictEqual(note.source, source.replace('[ ] Park', '[x] Park'))
+		assert.strictEqual(
+			mounted.element.querySelector<HTMLElement>('.answer-save-feedback')?.hidden,
+			true,
+		)
+		close(mounted)
+	})
+
 	it('finishes a pending save after disposal without reattaching controls or writing twice', async () => {
 		const note = new Note(sourceFor('choice'))
 		note.defer = true
@@ -682,7 +767,7 @@ describe('direct reading-view picks', () => {
 		note.finish?.()
 		await note.lastSave
 		assert.strictEqual(note.writes, 1)
-		assert.strictEqual(mounted.element.querySelector('fieldset'), null)
+		assert.strictEqual(mounted.element.querySelector('[role="group"]'), null)
 		assert.strictEqual(mounted.element.querySelector('p')?.textContent, 'Original Markdown')
 		mounted.element.remove()
 	})

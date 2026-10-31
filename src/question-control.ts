@@ -10,8 +10,8 @@ export class QuestionControl {
 	private readonly original: Node[]
 	private readonly content: HTMLElement
 	private readonly controls: AnswerControl[] = []
-	private readonly hidden = new Map<HTMLElement, HTMLElement['hidden']>()
-	private readonly badge: HTMLElement
+	private readonly notes: HTMLElement[]
+	private readonly metadata: HTMLElement
 
 	constructor(box: HTMLElement, block: QuestionBlock, actions: ControlActions) {
 		this.box = box
@@ -22,77 +22,110 @@ export class QuestionControl {
 			box.appendChild(box.ownerDocument.createElement('div'))
 		this.content.classList.add('callout-content')
 		this.original = Array.from(this.content.childNodes)
-		this.badge = box.ownerDocument.createElement('span')
-		this.badge.className = 'answer-kind'
+		this.notes = Array.from(
+			this.content.querySelectorAll<HTMLElement>(':scope > .callout[data-callout="note"]'),
+		)
+		this.metadata = box.ownerDocument.createElement('span')
+		this.metadata.className = 'answer-meta'
 	}
 
 	load(): void {
 		this.box.classList.add('answer-question')
-		this.hideSourceNotes()
-		this.addKind()
-		const answer = this.box.ownerDocument.createElement('div')
-		answer.className = 'answer-body'
-		const body = this.box.ownerDocument.createElement('div')
-		body.className = 'callout-content'
+		this.addMetadata()
+		this.content.classList.add('answer-body')
 
-		body.append(
-			...this.original.filter(
-				(node) => !Array.from(this.hidden.keys()).some((note) => note === node),
-			),
-		)
-		answer.append(body)
-		this.content.replaceChildren(answer)
-
-		if (canEdit(this.block)) this.mount(answer, answerTarget(this.block), this.actions)
-
-		if (canAnnotate(this.block)) this.addNote()
-	}
-
-	private hideSourceNotes(): void {
-		for (const note of this.content.querySelectorAll<HTMLElement>(
-			':scope > .callout[data-callout="note"]',
-		)) {
-			this.hidden.set(note, note.hidden)
-			note.classList.add('answer-source-hidden')
-			note.hidden = true
+		if (canAnnotate(this.block) && this.block.notes.length === 1 && this.notes.length === 0) {
+			const note = this.noteCallout()
+			this.addNoteBody(note)
+			this.notes.push(note)
 		}
+
+		if (canEdit(this.block))
+			this.mount(
+				this.box,
+				answerTarget(this.block),
+				{
+					...this.actions,
+					addNote:
+						this.block.notes.length === 0
+							? (): void => this.actions.modal(this.actions.draft(answerTarget(this.block, 'note')))
+							: undefined,
+				},
+				this.notes,
+			)
+
+		if (canAnnotate(this.block) && this.block.notes.length === 1) this.addNote()
 	}
 
-	private addKind(): void {
-		const kind = this.block.slots[0].content?.kind
+	private addMetadata(): void {
+		const title = this.box.querySelector(':scope > .callout-title')
 
-		if (kind === undefined || kind === 'text') return
-		this.badge.textContent = kind === 'choice' ? 'pick 1' : 'pick 1+'
-		this.box.querySelector(':scope > .callout-title')?.append(this.badge)
+		if (title === null) return
+
+		const status = title.querySelector(':scope > .answer-status')
+
+		if (status !== null) this.metadata.append(status)
+
+		title.append(this.metadata)
+	}
+
+	private noteCallout(): HTMLElement {
+		const source = this.notes[0]
+
+		if (source !== undefined) {
+			source.classList.add('answer-note')
+
+			return source
+		}
+
+		const callout = this.box.ownerDocument.createElement('div')
+		callout.classList.add('callout', 'answer-note')
+		callout.setAttribute('data-callout', 'note')
+		const heading = this.box.ownerDocument.createElement('div')
+		heading.className = 'callout-title'
+		const label = this.box.ownerDocument.createElement('div')
+		label.className = 'callout-title-inner'
+		label.textContent = 'Note'
+		heading.append(label)
+		callout.append(heading)
+
+		return callout
 	}
 
 	private addNote(): void {
-		const area = this.box.ownerDocument.createElement('div')
-		area.className = 'answer-note'
+		const callout = this.noteCallout()
+
+		if (callout.querySelector(':scope > .callout-content') === null) this.addNoteBody(callout)
+		this.content.append(callout)
+		this.mount(callout, answerTarget(this.block, 'note'), {
+			...this.actions,
+			state: (): void => {},
+		})
+	}
+
+	private addNoteBody(callout: HTMLElement): void {
 		const body = this.box.ownerDocument.createElement('div')
 		body.className = 'callout-content'
 		const note = this.block.notes[0]?.content
 
 		if (note?.kind === 'text' && note.text !== '') {
-			const text = this.box.ownerDocument.createElement('div')
+			const text = this.box.ownerDocument.createElement('p')
 			text.className = 'answer-note-text'
 			text.textContent = note.text
 			body.append(text)
 		}
 
-		area.append(body)
-		this.content.append(area)
-		// A note cannot recolor the containing answer or replace its icon.
-		this.mount(area, answerTarget(this.block, 'note'), { ...this.actions, state: (): void => {} })
+		callout.append(body)
 	}
 
 	private mount(
 		element: HTMLElement,
 		target: ReturnType<typeof answerTarget>,
 		actions: ControlActions,
+		preserved: readonly Node[] = [],
 	): void {
 		const draft = this.actions.draft(target)
-		const control = new AnswerControl(element, draft, actions)
+		const control = new AnswerControl(element, draft, actions, preserved)
 		this.controls.push(control)
 		control.load()
 	}
@@ -101,12 +134,10 @@ export class QuestionControl {
 		for (const control of this.controls) control.unload()
 		this.content.replaceChildren(...this.original)
 
-		for (const [note, hidden] of this.hidden) {
-			note.hidden = hidden
-			note.classList.remove('answer-source-hidden')
-		}
+		for (const note of this.notes) note.classList.remove('answer-note')
 
-		this.badge.remove()
+		this.metadata.remove()
 		this.box.classList.remove('answer-question')
+		this.content.classList.remove('answer-body')
 	}
 }

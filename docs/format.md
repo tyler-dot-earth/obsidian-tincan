@@ -26,7 +26,7 @@ A blank `>` line between the title and body is optional for all three kinds. Tex
 > - [ ] A jacket
 ```
 
-A blue question icon means unanswered; a green check means answered. The icon reports saved answer state, with no independent task-completion checkbox. Questions remain editable after answering. Collapsible callouts, title Markdown, LF/CRLF line endings, and missing final newlines are supported.
+Callouts retain the theme’s native layout. Answered questions use the theme’s success color and a check icon; an Answered label reports saved answer state, with no independent task-completion checkbox. Questions remain editable after answering. Collapsible callouts, title Markdown, LF/CRLF line endings, and missing final newlines are supported.
 
 Empty text answers show Answer…; saved text shows Edit. Recommendations belong inside the answer as `🤖` option labels. A single unchecked recommendation in a choice callout offers a suggestion plus Other. Text answer bodies are always literal Markdown, including a line beginning with `🤖`.
 
@@ -53,11 +53,11 @@ An optional `Other:` section follows the options:
 > Other: Past the market.
 ```
 
-A checked option or nonblank Other counts as answered. For a single pick, selecting an option clears all other options and Other. Ticking an empty Other checkbox clears the saved option immediately and opens the editor; saving Other clears every option. For multiple picks, Other can accompany checked options.
+A checked option or nonblank Other counts as answered. For a single pick, selecting an option clears all other options and Other. Opening the custom answer editor keeps the saved option unchanged; saving nonblank Other clears every option. For multiple picks, Other can accompany checked options.
 
-An unanswered Other row has no separate button. Tick the checkbox to open the editor or resume a canceled draft. Saved Other text is a checked row with Edit. Unticking that row clears its custom text. Cancel retains the draft; it does not undo a checkbox change already saved.
+Write another answer… opens the custom answer editor or resumes a canceled draft. Saved Other text appears in an Other answer callout with Edit and Clear actions; its Markdown stays an Other: paragraph. Clear removes only the custom text. Opening or canceling the editor does not write to the note. Cancel retains the draft.
 
-Once a pick answer has a selection, selected text uses the theme's normal text color and semibold weight; unselected labels use its muted text color. Other follows the same rule. Muted choices remain enabled and clickable. Unanswered questions keep their existing appearance, and clearing the last selection removes the emphasis and muting.
+Choices use the theme's native list layout and text appearance. Checkbox state identifies selected options; nonblank Other is the custom answer. The custom answer has no checkbox in either native Markdown or Tincan.
 
 Conflicting single picks, duplicate labels, unsupported kinds, missing titles, and malformed bodies receive no Tincan controls. Source stays unchanged. Correct the source to keep one pick, or use the multiple-pick kind when several answers are intended.
 
@@ -73,7 +73,7 @@ A nested `[!note]` must be the final direct child of the question callout:
 > > Ask again after checking the dates.
 ```
 
-Answer and note are independent fields. A note never counts as an answer. Only an existing nested `[!note]` enables note controls: a filled one shows Edit note, and an empty one shows Add note. Seed the first empty marker in source view:
+Answer and note are independent fields. A note never counts as an answer. Add a note opens the note editor for a question without a note. Saving creates a trailing nested `[!note]`. A filled existing note shows Edit note, and an empty one shows Add note. You can also write an empty marker in source view:
 
 ```markdown
 > [!question] What should we revisit?
@@ -81,7 +81,7 @@ Answer and note are independent fields. A note never counts as an answer. Only a
 > > [!note]
 ```
 
-Without that marker, there are no note controls. Saves never create an implicit note wrapper. Add note and Edit note use native Obsidian buttons visible at rest.
+Opening or canceling Add a note does not change the Markdown. Creating a note validates that no other note has appeared since the editor opened. Note creation preserves the current answer, including changes saved while the note editor was open.
 
 ## Writing and identity
 

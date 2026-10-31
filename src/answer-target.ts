@@ -90,6 +90,8 @@ export const writeAnswer = (source: string, target: AnswerTarget, answer: string
 	const block = matchTarget(source, target)
 	const slot = target.field === 'note' ? block.notes[0] : block.slots[0]
 
+	if (slot === undefined && target.field === 'note') return insertNote(source, block, answer)
+
 	if (slot === undefined)
 		throw new AnswerError({ message: 'The answer callout is missing; your draft is kept.' })
 
@@ -118,6 +120,41 @@ const replaceSlot = (source: string, slot: AnswerSlot, answer: string): string =
 		source.slice(0, slot.start) +
 		(slot.leading ?? '') +
 		header.text +
+		newline +
+		body +
+		trailing +
+		source.slice(slot.end)
+	)
+}
+
+const insertNote = (source: string, block: QuestionBlock, note: string): string => {
+	if (note.trim() === '') throw new AnswerError({ message: 'Type a note before saving.' })
+
+	const slot = block.slots[0]
+	const lines = sourceLines(source)
+	const header = lines[slot.line]
+
+	if (header === undefined)
+		throw new AnswerError({ message: 'The question is unavailable; your draft is kept.' })
+
+	const newline = lineEnding(lines, header)
+	const ended = slot.source.endsWith(newline)
+	const separator = slot.prefix + newline
+
+	const body = note
+		.replace(/\r\n|\r/g, '\n')
+		.split('\n')
+		.map((text) => slot.prefix + ' > ' + text)
+		.join(newline)
+
+	const trailing = ended || slot.end < source.length ? newline : ''
+
+	return (
+		source.slice(0, slot.end) +
+		(ended ? '' : newline) +
+		separator +
+		slot.prefix +
+		' > [!note]' +
 		newline +
 		body +
 		trailing +

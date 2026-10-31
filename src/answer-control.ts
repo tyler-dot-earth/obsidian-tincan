@@ -12,15 +12,22 @@ export class AnswerControl {
 	private readonly containerEl: HTMLElement
 	private draft: Draft
 	private readonly actions: ControlActions
+	private readonly preserved: readonly Node[]
 	private cleanup: (() => void) | undefined
 	private content: HTMLElement | undefined
 	private original: Node[] = []
 	private unsubscribe: (() => void) | undefined
 
-	constructor(element: HTMLElement, draft: Draft, actions: ControlActions) {
+	constructor(
+		element: HTMLElement,
+		draft: Draft,
+		actions: ControlActions,
+		preserved: readonly Node[] = [],
+	) {
 		this.containerEl = element
 		this.draft = draft
 		this.actions = actions
+		this.preserved = preserved
 	}
 
 	load(): void {
@@ -28,9 +35,8 @@ export class AnswerControl {
 			this.containerEl.querySelector<HTMLElement>(':scope > .callout-content') ??
 			this.containerEl.appendChild(this.containerEl.ownerDocument.createElement('div'))
 
-		content.classList.add('callout-content')
 		this.content = content
-		this.original = Array.from(content.childNodes)
+		this.original = Array.from(content.childNodes).filter((node) => !this.preserved.includes(node))
 
 		this.containerEl.classList.add('answer-callout')
 
@@ -40,13 +46,14 @@ export class AnswerControl {
 			this.draft.target.field === 'answer' &&
 			this.draft.target.answer?.content?.kind !== 'text'
 		) {
-			content.replaceChildren()
+			this.replaceContent()
 
 			const choices = new ChoiceControl(content, this.draft, {
 				...this.actions,
 				state: (target): void => this.updateState(target),
 			})
 
+			content.append(...this.preserved)
 			this.cleanup = (): void => choices.unload()
 
 			return
@@ -54,6 +61,10 @@ export class AnswerControl {
 
 		this.watchDraft()
 		this.show()
+	}
+
+	private replaceContent(...nodes: Node[]): void {
+		this.content?.replaceChildren(...nodes, ...this.preserved)
 	}
 
 	private updateState(target: AnswerTarget): void {
@@ -75,11 +86,13 @@ export class AnswerControl {
 		this.cleanup?.()
 
 		if (this.content === undefined) return
-		const text = this.content.ownerDocument.createElement('div')
+
+		const text = this.content.ownerDocument.createElement('p')
+
 		text.className = 'answer-saved'
 		text.textContent = this.draft.text
 		this.original = [text]
-		this.content.replaceChildren(text)
+		this.replaceContent(text)
 		this.appendAction(this.draft.target.field === 'note' ? 'Edit note' : 'Edit', () => {
 			const target = this.draft.savedTarget
 
@@ -88,6 +101,7 @@ export class AnswerControl {
 			this.watchDraft()
 			this.openEditor()
 		})
+		this.appendNoteAction()
 	}
 
 	private openEditor(): void {
@@ -104,12 +118,13 @@ export class AnswerControl {
 		button.type = 'button'
 		button.textContent = label
 
-		if (label === 'Edit') button.className = 'answer-link'
+		if (label === 'Edit' || label === 'Edit note' || label === 'Add a note')
+			button.className = 'answer-link'
 		button.addEventListener('click', (event) => {
 			event.stopPropagation()
 			action()
 		})
-		content.append(button)
+		content.insertBefore(button, content === this.content ? (this.preserved[0] ?? null) : null)
 	}
 
 	private show(): void {
@@ -118,6 +133,8 @@ export class AnswerControl {
 
 		if (content === undefined) return
 		content.replaceChildren()
+
+		content.classList.remove('answer-editor')
 
 		if (this.draft.saved) {
 			this.showSaved()
@@ -133,18 +150,25 @@ export class AnswerControl {
 				done: () => this.show(),
 			})
 
+			content.append(...this.preserved)
+
 			return
 		}
 
-		content.classList.remove('answer-editor')
-		content.append(...this.original)
+		this.replaceContent(...this.original)
 		const changed = this.draft.text !== this.draft.initialText
 		const blank = this.draft.target.answer?.blank !== false
 		const label = changed ? 'Resume draft…' : this.actionLabel(blank)
 		const actions = content.ownerDocument.createElement('div')
 		actions.className = 'answer-actions'
-		content.append(actions)
+		content.insertBefore(actions, this.preserved[0] ?? null)
 		this.appendAction(label, () => this.openEditor(), actions)
+		this.appendNoteAction(actions)
+	}
+
+	private appendNoteAction(container = this.content): void {
+		if (this.actions.addNote !== undefined)
+			this.appendAction('Add a note', this.actions.addNote, container)
 	}
 
 	private actionLabel(blank: boolean): string {
@@ -159,6 +183,6 @@ export class AnswerControl {
 
 		this.containerEl.classList.remove('answer-callout', ...appearanceClasses)
 		this.content?.classList.remove('answer-editor')
-		this.content?.replaceChildren(...this.original)
+		this.replaceContent(...this.original)
 	}
 }

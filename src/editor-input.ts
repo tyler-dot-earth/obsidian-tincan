@@ -13,7 +13,8 @@ export const mountTextInput = (container: HTMLElement, draft: Draft): EditorInpu
 		'aria-label',
 		`${draft.target.field === 'note' ? 'Side note' : 'Answer'}: ${draft.target.question}`,
 	)
-	textarea.placeholder = 'Type your answer in Markdown…'
+	textarea.placeholder =
+		draft.target.field === 'note' ? 'Type your note in Markdown…' : 'Type your answer in Markdown…'
 	textarea.rows = 5
 	textarea.value = draft.text
 	container.append(textarea)

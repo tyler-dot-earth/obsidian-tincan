@@ -5,6 +5,7 @@ import type { AnswerTarget } from '#/src/answer-target'
 export class Draft {
 	readonly target: AnswerTarget
 	savedTarget: AnswerTarget | undefined
+	saveError: string | undefined
 	text = ''
 	otherText = ''
 	otherEditing = false

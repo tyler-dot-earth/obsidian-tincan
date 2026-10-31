@@ -1,4 +1,4 @@
-import { type App, Modal, SuggestModal, type TFile } from 'obsidian'
+import { type App, Modal, setIcon, SuggestModal, type TFile } from 'obsidian'
 
 import { mountEditor } from '#/src/answer-editor'
 import { ChoiceControl, type ChoiceActions } from '#/src/choice-control'
@@ -32,7 +32,11 @@ export class AnswerModal extends Modal {
 			this.draft.target.field === 'answer' &&
 			this.draft.target.answer?.content?.kind !== 'text'
 		) {
-			const choices = new ChoiceControl(this.contentEl, this.draft, this.actions)
+			const choices = new ChoiceControl(this.contentEl, this.draft, {
+				...this.actions,
+				renderIcon: setIcon,
+			})
+
 			this.cleanup = (): void => choices.unload()
 
 			return

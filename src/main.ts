@@ -89,6 +89,7 @@ export default class AnswerPlugin extends Plugin {
 
 		if (runtime === undefined || draft.saving || draft.saved) return false
 		draft.saving = true
+		draft.saveError = undefined
 		draft.notify()
 
 		let result = false
@@ -112,6 +113,7 @@ export default class AnswerPlugin extends Plugin {
 							return true
 						},
 						onFailure: (error) => {
+							draft.saveError = error.message
 							new Notice(`${this.manifest.name}: ${error.message}`)
 
 							return false
@@ -120,7 +122,8 @@ export default class AnswerPlugin extends Plugin {
 				),
 			)
 		} catch {
-			new Notice(`${this.manifest.name}: Saving was interrupted; your draft is kept.`)
+			draft.saveError = 'Saving was interrupted; your draft is kept.'
+			new Notice(`${this.manifest.name}: ${draft.saveError}`)
 		}
 
 		draft.saving = false

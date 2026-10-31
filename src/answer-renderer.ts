@@ -26,20 +26,12 @@ export interface RenderHost {
 	readonly released: (section: AnswerSection) => void
 }
 
-const paintCallout = (element: HTMLElement, target: AnswerTarget): void => {
-	applyAppearance(element, 'answer', target.answer?.content)
-	const content = target.answer?.content
-	const answered = content !== undefined && isAnswered(content)
-	const icon = element.querySelector<HTMLElement>(':scope > .callout-title > .callout-icon')
-
-	if (icon !== null) setIcon(icon, answered ? 'circle-check' : 'circle-help')
-}
-
 const eligibleQuestion = (block: QuestionBlock | undefined): block is QuestionBlock =>
 	block !== undefined && canEdit(block)
 
 class RenderedQuestion extends MarkdownRenderChild {
 	private readonly control: QuestionControl
+	private readonly status: HTMLElement
 	private readonly icon: HTMLElement | null
 	private readonly originalIcon: Node[]
 
@@ -47,10 +39,27 @@ class RenderedQuestion extends MarkdownRenderChild {
 		super(element)
 		this.icon = element.querySelector<HTMLElement>(':scope > .callout-title > .callout-icon')
 		this.originalIcon = Array.from(this.icon?.childNodes ?? [])
+		this.status = element.ownerDocument.createElement('span')
+		this.status.className = 'answer-status'
+		this.status.textContent = 'Answered'
+		this.status.hidden = true
+		element.querySelector(':scope > .callout-title')?.append(this.status)
 		this.control = new QuestionControl(element, block, {
 			...actions,
-			state: (target): void => paintCallout(element, target),
+			state: (target): void => this.paint(target),
 		})
+	}
+
+	private paint(target: AnswerTarget): void {
+		applyAppearance(this.containerEl, 'answer', target.answer?.content)
+		const content = target.answer?.content
+		const answered = content !== undefined && isAnswered(content)
+		this.status.hidden = !answered
+
+		if (this.icon === null) return
+
+		if (answered) setIcon(this.icon, 'circle-check')
+		else this.icon.replaceChildren(...this.originalIcon)
 	}
 
 	override onload(): void {
@@ -59,6 +68,7 @@ class RenderedQuestion extends MarkdownRenderChild {
 	override onunload(): void {
 		this.control.unload()
 		this.containerEl.classList.remove(...appearanceClasses)
+		this.status.remove()
 		this.icon?.replaceChildren(...this.originalIcon)
 	}
 }
@@ -99,6 +109,7 @@ export class AnswerSection extends MarkdownRenderChild {
 
 	private actions(file: TFile): ControlActions {
 		return {
+			renderIcon: setIcon,
 			draft: (next): Draft => this.host.draft(file, next),
 			save: (draft): Promise<boolean> => this.host.save(file, draft),
 			modal: (draft): void => this.host.modal(file, draft),

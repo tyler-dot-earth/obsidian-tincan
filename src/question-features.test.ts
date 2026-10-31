@@ -103,12 +103,12 @@ describe('Other and side-note Markdown', () => {
 		)
 	})
 
-	it.each(['', '>\n'])('refuses implicit note fields with body %s', (body) => {
+	it.each(['', '>\n'])('targets a missing note field without creating it with body %s', (body) => {
 		const source = '> [!question] Revisit this?\n' + body
 		const block = questionBlocks(source)[0]
 		assert.ok(block !== undefined)
-		assert.strictEqual(canAnnotate(block), false)
-		assert.throws(() => targetFor(source, 'Revisit this?', 'note'), AnswerError)
+		assert.strictEqual(canAnnotate(block), true)
+		assert.strictEqual(targetFor(source, 'Revisit this?', 'note').answer, undefined)
 	})
 
 	it.effect(

@@ -2,9 +2,12 @@
 
 Answer questions inside Obsidian callouts in reading view. Put the question in the title and its answer in the body. Answers and notes stay in plain Markdown.
 
-![Question titles, text answers, picks, Other, and an explicit note in reading view.](docs/images/tincan.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/tincan-dark.png">
+  <img src="docs/images/tincan.png" alt="Tincan in Obsidian reading view: answered and unanswered questions, pick instructions, custom answers, and a nested note." width="700">
+</picture>
 
-Write a question callout and switch to reading view. A blue question icon marks an unanswered question; a green check marks a saved answer. The icon tracks the answer, with no separate task-completion checkbox.
+Write a question callout and switch to reading view. Unanswered questions keep your theme’s question appearance; saved answers use its success color and a check icon. The icon tracks the answer, with no separate task-completion checkbox.
 
 ## Text answers
 
@@ -23,7 +26,7 @@ Answer… opens a blank editor, and Done saves your answer. Saved text has Edit.
 > - [ ] Before dinner
 ```
 
-Tap an option to save it immediately. Picking another clears the first, including Other; unticking clears your answer. A single 🤖 option is enough when you just want to offer a suggestion. The title says “pick 1”.
+Tap an option to save it immediately. Picking another clears the first, including Other; unticking clears your answer. A single 🤖 option is enough when you just want to offer a suggestion. The instruction above the choices says “pick 1”.
 
 ## Pick more than one
 
@@ -35,13 +38,13 @@ Tap an option to save it immediately. Picking another clears the first, includin
 > - [ ] A jacket
 ```
 
-Tick any combination. Each tap saves, and the title says “pick 1+”. No Done button is needed for picks.
+Tick any combination. Each tap saves, and the instruction above the choices says “pick 1+”. No Done button is needed for picks.
 
-After any pick or Other is selected, selected text is emphasized and unselected labels are muted. Colors and weight follow your Obsidian theme. Muted choices remain clickable; unanswered questions keep their usual appearance.
+Checkboxes show selected options. Callouts, lists, and paragraphs follow your Obsidian theme, with the theme’s success color, a check icon, and an Answered label when an answer is saved.
 
 ## Write something else
 
-Every pick question has an Other row. Tick its checkbox, type your answer, and press Save. In a single-pick question, ticking empty Other clears the saved option immediately. Saving Other clears the options, and picking an option clears Other. Multiple picks can accompany Other.
+Every pick question offers Write another answer…. Open the editor, type your answer, and press Save. Opening or canceling keeps saved picks unchanged. Saving a custom answer clears the options in a single-pick question, and picking an option clears the custom answer. Multiple picks can accompany a custom answer.
 
 ```markdown
 > [!question|choice] How should we meet?
@@ -52,7 +55,7 @@ Every pick question has an Other row. Tick its checkbox, type your answer, and p
 > Other: A phone call.
 ```
 
-Saved Other text reads as a checked row with Edit. Unticking it clears the custom answer. If you cancel an unsaved Other draft, tick the row again to resume it; an unanswered Other row has no separate button.
+Saved Other text appears in an Other answer callout with Edit and Clear actions. The Markdown stays a plain Other: paragraph. Clear removes only the custom answer. If you cancel an unsaved custom draft, use Write another answer… again to resume it.
 
 ## Leave a note
 
@@ -66,7 +69,7 @@ Add a trailing nested `[!note]` when you want a comment separate from the answer
 > > Ask again after checking the dates.
 ```
 
-Only an explicit `[!note]` gets note controls. A filled note has Edit note. Add an empty nested `[!note]` in source view to get Add note in reading view. Both are small native Obsidian buttons. A note never counts as an answer.
+Use Add a note beside the answer actions to open the note editor. Saving creates a trailing nested `[!note]`; opening or canceling leaves the Markdown unchanged. Existing notes keep their native callout and Edit note action. A note never counts as an answer.
 
 Keep callouts at the document's top level, give each one a nonempty question title, and separate them with a blank line. Use `>` on every body line, including blank lines. The body can start directly under the title or after a blank `>` line; both layouts work for text, single picks, and multiple picks. See [the format and save rules](docs/format.md) for the details.
 
@@ -105,6 +108,7 @@ pnpm build
 
 ## Saving and drafts
 
+- If a pick cannot save, its draft stays visible with the refusal reason and Retry.
 - Saves check the current question and answer before writing. Duplicate questions, concurrent changes, and editable copies in other panes refuse the save and keep the draft.
 - Cancel keeps a draft in memory. Resume draft opens it again; restarting Obsidian or disabling Tincan loses unsaved drafts.
 - Controls work in reading-view note panes. Code examples, embeds, and unsupported question structures stay ordinary Markdown.

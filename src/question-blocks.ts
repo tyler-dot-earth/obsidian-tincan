@@ -89,5 +89,6 @@ export const canEdit = (block: QuestionBlock): boolean =>
 
 export const canAnnotate = (block: QuestionBlock): boolean =>
 	block.context !== undefined &&
-	block.notes.length === 1 &&
+	block.notes.length <= 1 &&
+	(block.notes.length !== 0 || canEdit(block)) &&
 	block.notes.every((note) => note.content?.kind === 'text')

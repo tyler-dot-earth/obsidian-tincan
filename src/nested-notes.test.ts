@@ -10,6 +10,45 @@ const base =
 const note = '>\n> > [!note]\n> > Leaning A; ask after X\n'
 
 describe('notes within an answer', () => {
+	it.each(['\n', '\r\n'])(
+		'creates a trailing note with %j line endings while preserving the answer and surrounding bytes',
+		(newline) => {
+			const question =
+				['  > [!question|choice] Walk?', '  > - [x] River', '  > - [ ] Park', '  >'].join(newline) +
+				newline
+
+			const source = 'Before' + newline + newline + question + newline + 'After' + newline
+			const target = targetFor(source, 'Walk?', 'note')
+
+			const inserted =
+				['  >', '  > > [!note]', '  > > Check weather', '  > > Ask Friday'].join(newline) + newline
+
+			const saved = writeAnswer(source, target, 'Check weather\nAsk Friday')
+			assert.strictEqual(saved, source.replace(question, question + inserted))
+			assert.strictEqual(
+				targetFor(saved, 'Walk?').answer?.source,
+				targetFor(source, 'Walk?').answer?.source,
+			)
+		},
+	)
+
+	it('creates a note without adding a final newline, using the latest independent answer', () => {
+		const source = '> [!question] When?\n> Tomorrow'
+		const target = targetFor(source, 'When?', 'note')
+		const latest = source.replace('Tomorrow', 'Friday')
+		assert.strictEqual(
+			writeAnswer(latest, target, 'Check Monday'),
+			latest + '\n>\n> > [!note]\n> > Check Monday',
+		)
+	})
+
+	it('refuses an empty new note, a concurrently added note, and duplicated questions', () => {
+		const target = targetFor(base, 'Walk?', 'note')
+		assert.throws(() => writeAnswer(base, target, '   '), AnswerError)
+		assert.throws(() => writeAnswer(base + note, target, 'Replace it'), AnswerError)
+		assert.throws(() => writeAnswer(base + '\n' + base, target, 'Guess'), AnswerError)
+	})
+
 	it('parses answer and trailing note independently, including Other-only answers', () => {
 		const blocks = questionBlocks(base + note)
 		const block = blocks[0]
