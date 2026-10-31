@@ -59,6 +59,8 @@ Saved Other text appears in an Other answer callout with Edit and Clear actions.
 
 ## Leave a note
 
+Each checkbox option has its own Add a note action. Saved notes appear beneath that option as native nested callouts. They stay attached to the option when you select or deselect answers; you can annotate an option without choosing it.
+
 Add a trailing nested `[!note]` when you want a comment separate from the answer:
 
 ```markdown

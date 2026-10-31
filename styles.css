@@ -61,14 +61,14 @@
 	list-style: none;
 }
 
-.answer-choices label {
+.answer-choices .answer-option {
 	display: block;
 	position: relative;
 	cursor: pointer;
 	overflow-wrap: anywhere;
 }
 
-.answer-choice-item input {
+.answer-option > input {
 	position: absolute;
 	font: inherit;
 	width: var(--checkbox-size);
@@ -125,7 +125,7 @@
 	display: none;
 }
 
-.is-mobile .answer-choices label,
+.is-mobile .answer-choices .answer-option,
 .is-mobile .answer-question button.answer-link {
 	min-height: 44px;
 }
@@ -153,4 +153,36 @@
 	overflow-y: auto;
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
+}
+
+.answer-option-row {
+	display: flex;
+	align-items: baseline;
+	gap: var(--size-4-2);
+	margin-inline-start: calc(var(--checkbox-size) * -1.5);
+	padding-inline-start: calc(var(--checkbox-size) * 1.5);
+	border-radius: var(--radius-s);
+}
+
+.answer-option-row:hover,
+.answer-option-row:focus-within {
+	background: var(--background-modifier-hover);
+}
+
+.answer-option-row > label {
+	flex: 1;
+	min-width: 0;
+}
+
+.answer-option-note-action {
+	flex-shrink: 0;
+}
+
+.answer-option-note {
+	margin-block: var(--size-4-2);
+}
+
+/* Obsidian's list paragraph reset also reaches paragraphs inside nested callouts. */
+.answer-option-note.answer-note > .callout-content > p {
+	margin-block: var(--p-spacing);
 }

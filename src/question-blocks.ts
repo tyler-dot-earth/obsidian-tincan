@@ -7,6 +7,7 @@ import type { AnswerContent } from '#/src/answer-content'
 import { calloutSlot } from '#/src/answer-slots'
 import { sourceLines, type SourceLine } from '#/src/markdown-lines'
 import { splitNestedNotes } from '#/src/nested-notes'
+import { splitOptionNotes, type OptionNotes } from '#/src/option-notes'
 
 export interface AnswerSlot {
 	readonly line: number
@@ -17,6 +18,8 @@ export interface AnswerSlot {
 	readonly source: string
 	readonly content: AnswerContent | undefined
 	readonly leading?: string
+	/** Source identity excludes independently writable option notes. */
+	readonly identity?: string
 }
 
 export interface QuestionBlock {
@@ -26,6 +29,7 @@ export interface QuestionBlock {
 	readonly context: string | undefined
 	readonly slots: readonly [AnswerSlot]
 	readonly notes: readonly AnswerSlot[]
+	readonly optionNotes: readonly OptionNotes[]
 }
 
 const questionTitle = (header: string): string | undefined =>
@@ -42,6 +46,10 @@ const calloutFrom = (node: Blockquote, lines: readonly SourceLine[]): QuestionBl
 
 	const fields = splitNestedNotes(slot, node, lines)
 
+	const options = fields.valid
+		? splitOptionNotes(fields.answer, node, lines)
+		: { answer: fields.answer, notes: [] }
+
 	const endLine = slot.line + sourceLines(slot.source).length - 1
 
 	const supported = lines
@@ -56,8 +64,9 @@ const calloutFrom = (node: Blockquote, lines: readonly SourceLine[]): QuestionBl
 		line: slot.line,
 		endLine,
 		context: supported ? header.trimEnd() : undefined,
-		slots: [fields.answer],
+		slots: [options.answer],
 		notes: fields.notes,
+		optionNotes: options.notes,
 	}
 }
 

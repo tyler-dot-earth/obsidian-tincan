@@ -61,6 +61,23 @@ Choices use the theme's native list layout and text appearance. Checkbox state i
 
 Conflicting single picks, duplicate labels, unsupported kinds, missing titles, and malformed bodies receive no Tincan controls. Source stays unchanged. Correct the source to keep one pick, or use the multiple-pick kind when several answers are intended.
 
+## Notes on options
+
+Indent a nested note inside a task item to annotate that option independently of its selection:
+
+```md
+> [!question|choice] Which route?
+>
+> - [ ] River
+>   > [!note]
+>   > Quieter, but longer.
+> - [x] Park
+```
+
+Add a note beside any option opens its editor; saving creates the nested callout. Existing notes show Edit note. Picking another option, unchecking an option, or saving a custom answer preserves these notes. Notes do not count as answers. One note per option is supported; other nested list content stays unsupported.
+
+Option notes, picks, and the question-level note are separate save targets. Concurrent changes to a different field are preserved; changed or renamed options and conflicting edits to the same note are refused. Clearing a saved option note requires confirmation.
+
 ## Explicit notes
 
 A nested `[!note]` must be the final direct child of the question callout:

@@ -1,5 +1,5 @@
 import { answerText } from '#/src/answer-content'
-import type { AnswerTarget } from '#/src/answer-target'
+import { type AnswerTarget, slotIdentity } from '#/src/answer-target'
 
 /** Owned by the plugin, never by a disposable Markdown section. */
 export class Draft {
@@ -66,7 +66,7 @@ export class Drafts<File> {
 			target.question,
 			target.context,
 			target.field,
-			target.answer?.source,
+			slotIdentity(target.answer),
 		])
 
 		let draft = drafts.get(key)

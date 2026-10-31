@@ -93,7 +93,7 @@ export class AnswerControl {
 		text.textContent = this.draft.text
 		this.original = [text]
 		this.replaceContent(text)
-		this.appendAction(this.draft.target.field === 'note' ? 'Edit note' : 'Edit', () => {
+		this.appendAction(this.draft.target.field !== 'answer' ? 'Edit note' : 'Edit', () => {
 			const target = this.draft.savedTarget
 
 			if (target === undefined) return
@@ -172,7 +172,7 @@ export class AnswerControl {
 	}
 
 	private actionLabel(blank: boolean): string {
-		if (this.draft.target.field === 'note') return blank ? 'Add note' : 'Edit note'
+		if (this.draft.target.field !== 'answer') return blank ? 'Add note' : 'Edit note'
 
 		return blank ? 'Answer…' : 'Edit'
 	}

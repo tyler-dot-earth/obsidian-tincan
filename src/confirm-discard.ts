@@ -13,7 +13,7 @@ const clearNoteConfirmation = (draft: Draft): DiscardConfirmation | undefined =>
 	const content = draft.target.answer?.content
 
 	if (
-		draft.target.field !== 'note' ||
+		draft.target.field === 'answer' ||
 		content?.kind !== 'text' ||
 		content.text.trim() === '' ||
 		draft.text.trim() !== ''

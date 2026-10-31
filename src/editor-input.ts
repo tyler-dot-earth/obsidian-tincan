@@ -11,10 +11,12 @@ export const mountTextInput = (container: HTMLElement, draft: Draft): EditorInpu
 	textarea.className = 'answer-input'
 	textarea.setAttribute(
 		'aria-label',
-		`${draft.target.field === 'note' ? 'Side note' : 'Answer'}: ${draft.target.question}`,
+		`${draft.target.field === 'answer' ? 'Answer' : 'Side note'}: ${draft.target.question}${draft.target.field.startsWith('option:') ? ' / ' + draft.target.field.slice(7) : ''}`,
 	)
 	textarea.placeholder =
-		draft.target.field === 'note' ? 'Type your note in Markdown…' : 'Type your answer in Markdown…'
+		draft.target.field !== 'answer'
+			? 'Type your note in Markdown…'
+			: 'Type your answer in Markdown…'
 	textarea.rows = 5
 	textarea.value = draft.text
 	container.append(textarea)

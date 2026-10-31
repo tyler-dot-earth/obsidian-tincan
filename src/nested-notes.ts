@@ -7,6 +7,7 @@ import type { AnswerSlot } from '#/src/question-blocks'
 export interface AnswerFields {
 	readonly answer: AnswerSlot
 	readonly notes: readonly AnswerSlot[]
+	readonly valid: boolean
 }
 
 const noteHeader = /^([ \t]*>[ \t]*>)[ \t]*\[!note\](?:[+-])?(?:[ \t]+[^\r\n]*)?$/i
@@ -19,7 +20,10 @@ const leadingBefore = (lines: readonly SourceLine[], line: number): string => {
 		: ''
 }
 
-const noteSlot = (node: Blockquote, lines: readonly SourceLine[]): AnswerSlot | undefined => {
+export const noteSlot = (
+	node: Blockquote,
+	lines: readonly SourceLine[],
+): AnswerSlot | undefined => {
 	if (node.position === undefined) return undefined
 	const line = node.position.start.line - 1
 	const header = lines[line]
@@ -85,7 +89,7 @@ export const splitNestedNotes = (
 
 	const first = notes[0]
 
-	if (first === undefined) return { answer: slot, notes }
+	if (first === undefined) return { answer: slot, notes, valid: true }
 	const source = slot.source.slice(0, first.start - slot.start)
 
 	const body = lines
@@ -106,5 +110,6 @@ export const splitNestedNotes = (
 			blank: content !== undefined && !isAnswered(content),
 		},
 		notes,
+		valid,
 	}
 }

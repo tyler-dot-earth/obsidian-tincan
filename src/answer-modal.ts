@@ -23,7 +23,9 @@ export class AnswerModal extends Modal {
 	}
 
 	override onOpen(): void {
-		this.titleEl.textContent = this.draft.target.question
+		this.titleEl.textContent = this.draft.target.field.startsWith('option:')
+			? 'Note: ' + this.draft.target.field.slice(7)
+			: this.draft.target.question
 		this.contentEl.classList.add('answer-editor')
 		this.draft.editing = true
 		this.draft.wantsFocus = true

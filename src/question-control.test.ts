@@ -224,7 +224,7 @@ describe('one compact question box', () => {
 		const add = box.querySelector('.answer-add-note')
 		assert.ok(add !== null)
 		assert.strictEqual(add.parentElement, box.querySelector('.answer-other-write')?.parentElement)
-		click(box, 'Add a note')
+		click(box.querySelector<HTMLElement>('.answer-other-row') ?? box, 'Add a note')
 		assert.strictEqual(note.popup?.target.field, 'note')
 		assert.strictEqual(box.querySelector<HTMLElement>('.answer-other-editor')?.hidden, true)
 		assert.strictEqual(box.querySelector<HTMLInputElement>('.answer-option input')?.checked, true)
@@ -407,4 +407,58 @@ describe('one compact question box', () => {
 		)
 		root.remove()
 	})
+})
+
+it('opens a note for an unchecked option without changing the picks', () => {
+	const source = '> [!question|choice] Q?\n> - [ ] River\n> - [x] Park\n'
+	const note = new Note(source)
+	const { root, box, control } = note.mount(outer('<ul><li>River</li><li>Park</li></ul>'))
+	box.querySelector<HTMLButtonElement>('[aria-label="Add a note: River"]')?.click()
+	assert.strictEqual(note.popup?.target.field, 'option:River')
+	assert.strictEqual(note.popup?.target.answer, undefined)
+	assert.strictEqual(note.writes, 0)
+	assert.strictEqual(note.source, source)
+	assert.strictEqual(box.querySelector<HTMLInputElement>('.answer-option input')?.checked, false)
+	control.unload()
+	root.remove()
+})
+
+it('edits a native option note independently, preserves it during picks, and restores its DOM', async () => {
+	const source =
+		'> [!question|choice] Q?\n> - [ ] River\n>   > [!note]\n>   > Ask Friday\n> - [ ] Park\n>\n> > [!note]\n> > Overall\n'
+
+	const note = new Note(source)
+
+	const html = outer(
+		'<ul><li>River' +
+			nativeNote +
+			'</li><li>Park</li></ul>' +
+			nativeNote.replace('Ask Friday', 'Overall'),
+	)
+
+	const { root, box, control } = note.mount(html)
+	const callout = box.querySelector<HTMLElement>('.answer-option-note')
+	assert.ok(callout !== null)
+	assert.strictEqual(callout.querySelector('.callout-icon')?.textContent, 'Native icon')
+	assert.strictEqual(box.querySelectorAll('.answer-note').length, 2)
+	click(callout, 'Edit note')
+	const textarea = callout.querySelector('textarea')
+	assert.ok(textarea !== null)
+	textarea.value = 'Check Saturday instead.'
+	textarea.dispatchEvent(new Event('input', { bubbles: true }))
+	box.querySelectorAll<HTMLInputElement>('.answer-option input')[1]?.click()
+	await note.lastSave
+	assert.match(note.source, /\[x\] Park/)
+	assert.match(note.source, />   > Ask Friday/)
+	assert.strictEqual(textarea.value, 'Check Saturday instead.')
+	click(callout, 'Done')
+	await note.lastSave
+	assert.match(note.source, />   > Check Saturday instead\./)
+	assert.match(note.source, /\[x\] Park/)
+	assert.match(note.source, /> > Overall/)
+	assert.strictEqual(note.writes, 2)
+	control.unload()
+	assert.strictEqual(box.querySelector('ul > li .callout-icon')?.textContent, 'Native icon')
+	assert.strictEqual(box.querySelectorAll('.answer-option-note').length, 0)
+	root.remove()
 })

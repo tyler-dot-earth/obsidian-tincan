@@ -27,6 +27,7 @@ export interface ChoiceActions {
 	readonly renderIcon?: ((element: HTMLElement, icon: string) => void) | undefined
 	readonly addNote?: (() => void) | undefined
 	readonly state?: (target: AnswerTarget) => void
+	readonly optionNote?: (item: HTMLElement, label: string) => void
 }
 
 /** Own inputs omit Obsidian's task classes/data-line; capture also blocks native handlers. */
@@ -110,9 +111,13 @@ export class ChoiceControl {
 			label.className = 'answer-option'
 			label.classList.toggle('answer-recommended', option.label.startsWith('🤖'))
 			label.append(input, text)
-			item.append(label)
+			const row = list.ownerDocument.createElement('div')
+			row.className = 'answer-option-row'
+			row.append(label)
+			item.append(row)
 			list.append(item)
 			this.inputs.push(input)
+			this.actions.optionNote?.(item, option.label)
 			input.addEventListener('focus', () => {
 				this.draft.focusedOption = index
 				this.draft.wantsFocus = true
@@ -121,7 +126,11 @@ export class ChoiceControl {
 	}
 
 	private intercept(event: Event): void {
-		if (event.target instanceof Element && event.target.closest('.answer-note') !== null) return
+		if (
+			event.target instanceof Element &&
+			event.target.closest('.answer-note, .answer-option-note-action') !== null
+		)
+			return
 		event.stopImmediatePropagation()
 
 		if (this.other.handle(event)) return

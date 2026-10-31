@@ -11,7 +11,9 @@
 > [!question|choice] Which route?
 >
 > - [ ] 🤖 Along the river
-> - [ ] Through the park
+>   > [!note]
+>   > A little longer, but quieter.
+> - [ ] Through the park, stopping at the bakery to pick up something for everyone before we meet by the pond
 >
 > Other: Past the market.
 >

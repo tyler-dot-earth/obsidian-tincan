@@ -1,5 +1,6 @@
 import { choiceReplacement } from '#/src/choice-replacement'
 import { lineEnding, sourceLines } from '#/src/markdown-lines'
+import type { OptionNotes } from '#/src/option-notes'
 import {
 	canEdit,
 	canAnnotate,
@@ -11,26 +12,39 @@ import { AnswerError } from '#/src/write-error'
 
 export { AnswerError } from '#/src/write-error'
 
+export type AnswerField = 'answer' | 'note' | `option:${string}`
+
 export interface AnswerTarget {
 	readonly question: string
 	readonly context: string
 	readonly answer: AnswerSlot | undefined
-	readonly field: 'answer' | 'note'
+	readonly field: AnswerField
 }
 
-const fieldSlots = (block: QuestionBlock, field: 'answer' | 'note'): readonly AnswerSlot[] =>
-	field === 'note' ? block.notes : block.slots
+export const slotIdentity = (slot: AnswerSlot | undefined): string | undefined =>
+	slot?.identity ?? slot?.source
 
-const editableField = (block: QuestionBlock, field: 'answer' | 'note'): boolean => {
+const optionFor = (block: QuestionBlock, field: AnswerField): OptionNotes | undefined =>
+	block.optionNotes.find((option) => `option:${option.label}` === field)
+
+const fieldSlots = (block: QuestionBlock, field: AnswerField): readonly AnswerSlot[] => {
+	if (field === 'answer') return block.slots
+
+	if (field === 'note') return block.notes
+
+	return optionFor(block, field)?.notes ?? []
+}
+
+const editableField = (block: QuestionBlock, field: AnswerField): boolean => {
 	if (field === 'answer') return canEdit(block)
 
-	return canAnnotate(block)
+	if (field === 'note') return canAnnotate(block)
+	const option = optionFor(block, field)
+
+	return canEdit(block) && option !== undefined && option.notes.length <= 1
 }
 
-export const answerTarget = (
-	block: QuestionBlock,
-	field: 'answer' | 'note' = 'answer',
-): AnswerTarget => {
+export const answerTarget = (block: QuestionBlock, field: AnswerField = 'answer'): AnswerTarget => {
 	const answer = fieldSlots(block, field)[0]
 
 	if (block.context === undefined || !editableField(block, field))
@@ -49,7 +63,7 @@ export const answerTarget = (
 export const targetFor = (
 	source: string,
 	question: string,
-	field: 'answer' | 'note' = 'answer',
+	field: AnswerField = 'answer',
 ): AnswerTarget => {
 	const matches = questionBlocks(source).filter((block) => block.question === question)
 	const block = matches[0]
@@ -77,7 +91,7 @@ export const matchTarget = (source: string, target: AnswerTarget): QuestionBlock
 
 	const slot = fieldSlots(block, target.field)[0]
 
-	if (slot?.source !== target.answer?.source)
+	if (slotIdentity(slot) !== slotIdentity(target.answer))
 		throw new AnswerError({ message: 'The answer changed; your draft is kept.' })
 
 	return block
@@ -88,14 +102,48 @@ export const writeAnswer = (source: string, target: AnswerTarget, answer: string
 	if (target.field === 'answer' && answer.trim() === '')
 		throw new AnswerError({ message: 'Type an answer before saving.' })
 	const block = matchTarget(source, target)
-	const slot = target.field === 'note' ? block.notes[0] : block.slots[0]
+	const slot = fieldSlots(block, target.field)[0]
 
-	if (slot === undefined && target.field === 'note') return insertNote(source, block, answer)
-
-	if (slot === undefined)
-		throw new AnswerError({ message: 'The answer callout is missing; your draft is kept.' })
+	if (slot === undefined) return insertFieldNote(source, block, target.field, answer)
 
 	return replaceSlot(source, slot, answer)
+}
+
+const insertOptionNote = (
+	source: string,
+	block: QuestionBlock,
+	field: AnswerField,
+	text: string,
+): string => {
+	if (text.trim() === '') throw new AnswerError({ message: 'Type a note before saving.' })
+	const option = optionFor(block, field)
+	const lines = sourceLines(source)
+	const line = option === undefined ? undefined : lines[option.line]
+
+	if (line === undefined)
+		throw new AnswerError({ message: 'The option changed; your draft is kept.' })
+	const newline = lineEnding(lines, line)
+	const prefix = block.slots[0].prefix + '   >'
+
+	const body = text
+		.replace(/\r\n|\r/g, '\n')
+		.split('\n')
+		.map((part) => prefix + ' ' + part)
+		.join(newline)
+
+	const end = line.offset + line.text.length + line.ending.length
+	const trailing = line.ending === '' ? '' : newline
+
+	return (
+		source.slice(0, end) +
+		(line.ending === '' ? newline : '') +
+		prefix +
+		' [!note]' +
+		newline +
+		body +
+		trailing +
+		source.slice(end)
+	)
 }
 
 const replaceSlot = (source: string, slot: AnswerSlot, answer: string): string => {
@@ -160,4 +208,16 @@ const insertNote = (source: string, block: QuestionBlock, note: string): string 
 		trailing +
 		source.slice(slot.end)
 	)
+}
+
+const insertFieldNote = (
+	source: string,
+	block: QuestionBlock,
+	field: AnswerField,
+	text: string,
+): string => {
+	if (field === 'note') return insertNote(source, block, text)
+
+	if (field.startsWith('option:')) return insertOptionNote(source, block, field, text)
+	throw new AnswerError({ message: 'The answer callout is missing; your draft is kept.' })
 }
